@@ -55,3 +55,21 @@ def test_api_rejects_invalid_event_type_and_unknown_vehicle() -> None:
         json={"event_type": EventType.BATTERY_DROP, "target": "UxV-99", "severity": 0.7},
     )
     assert unknown_vehicle.status_code == 404
+
+
+def test_api_accepts_new_tactical_immune_event_targets() -> None:
+    client = TestClient(create_app())
+
+    area_event = client.post(
+        "/event/inject",
+        json={"event_type": EventType.DATA_STALE, "target": "A", "severity": 0.65},
+    )
+    assert area_event.status_code == 200
+    assert area_event.json()["recommendations"][0]["actions"][0]["action"] == "mark_area_stale"
+
+    vehicle_event = client.post(
+        "/event/inject",
+        json={"event_type": EventType.MOBILITY_BLOCKED, "target": "UxV-05", "severity": 0.7},
+    )
+    assert vehicle_event.status_code == 200
+    assert vehicle_event.json()["recommendations"][0]["actions"][0]["action"] == "reroute"

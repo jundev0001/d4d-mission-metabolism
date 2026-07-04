@@ -28,6 +28,14 @@ export const EventTypes = [
   "comm_degraded",
   "no_go",
   "priority_shift",
+  "data_stale",
+  "target_detected",
+  "mobility_blocked",
+  "weather_degraded",
+  "collision_risk",
+  "sensor_confidence_drop",
+  "asset_added",
+  "reserve_depleted",
 ] as const
 
 const DecisionActions = ["approve", "reject", "manual"] as const
@@ -39,6 +47,16 @@ const MicroActionTypes = [
   "hold",
   "suppress_alerts",
   "redistribute_coverage",
+  "reroute",
+  "deconflict_paths",
+  "reassign_role",
+  "handoff_target",
+  "switch_sensor_mode",
+  "sync_data",
+  "mark_area_stale",
+  "launch_reserve",
+  "downgrade_objective",
+  "request_human_confirm",
 ] as const
 
 const Percent = z.number().min(0).max(1)

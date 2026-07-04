@@ -61,6 +61,14 @@ class EventType(StrEnum):
     COMM_DEGRADED = "comm_degraded"
     NO_GO = "no_go"
     PRIORITY_SHIFT = "priority_shift"
+    DATA_STALE = "data_stale"
+    TARGET_DETECTED = "target_detected"
+    MOBILITY_BLOCKED = "mobility_blocked"
+    WEATHER_DEGRADED = "weather_degraded"
+    COLLISION_RISK = "collision_risk"
+    SENSOR_CONFIDENCE_DROP = "sensor_confidence_drop"
+    ASSET_ADDED = "asset_added"
+    RESERVE_DEPLETED = "reserve_depleted"
 
 
 @unique
@@ -87,6 +95,16 @@ class MicroActionType(StrEnum):
     HOLD = "hold"
     SUPPRESS_ALERTS = "suppress_alerts"
     REDISTRIBUTE_COVERAGE = "redistribute_coverage"
+    REROUTE = "reroute"
+    DECONFLICT_PATHS = "deconflict_paths"
+    REASSIGN_ROLE = "reassign_role"
+    HANDOFF_TARGET = "handoff_target"
+    SWITCH_SENSOR_MODE = "switch_sensor_mode"
+    SYNC_DATA = "sync_data"
+    MARK_AREA_STALE = "mark_area_stale"
+    LAUNCH_RESERVE = "launch_reserve"
+    DOWNGRADE_OBJECTIVE = "downgrade_objective"
+    REQUEST_HUMAN_CONFIRM = "request_human_confirm"
 
 
 CAPABILITY_NAMES: Final = (
