@@ -52,7 +52,7 @@ def apply_micro_action(  # noqa: C901, PLR0911
     default_area = acting.area if acting is not None else (action.area or "B")
     if action.action == MicroActionType.RETURN:
         returning = _set_vehicle_status(vehicles, action.vehicle_id, VehicleStatus.RETURNING)
-        return returning, assignments
+        return returning, _remove_assignment(assignments, action.vehicle_id)
     if action.action == MicroActionType.REPLACE:
         return (
             _activate_replacement(vehicles, action, role, default_area),
@@ -68,7 +68,7 @@ def apply_micro_action(  # noqa: C901, PLR0911
             _activate_replacement(vehicles, action, role, default_area),
             _assign_vehicle(assignments, action, role, default_area),
         )
-    if action.action in {MicroActionType.REROUTE, MicroActionType.DECONFLICT_PATHS}:
+    if action.action == MicroActionType.REROUTE:
         return (
             _reroute_vehicle(vehicles, action),
             _assign_vehicle(assignments, action, role, default_area),
@@ -86,9 +86,8 @@ def apply_micro_action(  # noqa: C901, PLR0911
         return _improve_comm(vehicles, action.vehicle_id), assignments
     if action.action == MicroActionType.HOLD:
         standby = _set_vehicle_status(vehicles, action.vehicle_id, VehicleStatus.STANDBY)
-        return standby, assignments
+        return standby, _remove_assignment(assignments, action.vehicle_id)
     if action.action in {
-        MicroActionType.SUPPRESS_ALERTS,
         MicroActionType.MARK_AREA_STALE,
         MicroActionType.DOWNGRADE_OBJECTIVE,
         MicroActionType.REQUEST_HUMAN_CONFIRM,
@@ -307,6 +306,13 @@ def _assign_vehicle(
     if any(assignment.vehicle_id == action.vehicle_id for assignment in assignments):
         return replaced
     return (*assignments, next_assignment)
+
+
+def _remove_assignment(
+    assignments: tuple[Assignment, ...],
+    vehicle_id: str,
+) -> tuple[Assignment, ...]:
+    return tuple(assignment for assignment in assignments if assignment.vehicle_id != vehicle_id)
 
 
 def _role_for_action(action: MicroAction, dominant: CapabilityName) -> CapabilityName:

@@ -4,8 +4,8 @@ import math
 from dataclasses import dataclass
 from typing import Final
 
-from d4d_mission.capability import effective_capability
 from d4d_mission.catalog import vehicle_type_profile
+from d4d_mission.decay import HORIZON_STEPS, horizon_capability
 from d4d_mission.models import (
     AllocationResponse,
     Assignment,
@@ -77,16 +77,20 @@ class _Candidate:
     weight: float
 
 
-def plan_allocation(vehicles: tuple[Vehicle, ...], mission: Mission) -> AllocationResponse:
+def plan_allocation(
+    vehicles: tuple[Vehicle, ...],
+    mission: Mission,
+    horizon: int = HORIZON_STEPS,
+) -> AllocationResponse:
     """Deploy only the useful task force and keep surplus UxVs at GCS reserve.
 
     Strongest ready assets are placed first, each into the priority-weighted
     area and role where its health-weighted capability covers the most mission
-    demand. Once the target coverage is met, the remaining assets are left
-    unassigned so they can rotate in after events or be pulled into higher
-    priority areas by the next approved allocation.
+    demand over the prediction horizon. Once the target coverage is met, the
+    remaining assets are left unassigned so they can rotate in after events or
+    be pulled into higher priority areas by the next approved allocation.
     """
-    placements = _plan(vehicles=vehicles, mission=mission)
+    placements = _plan(vehicles=vehicles, mission=mission, horizon=horizon)
     reserve_count = sum(1 for vehicle in vehicles if vehicle.status != VehicleStatus.LOST) - len(
         placements
     )
@@ -143,7 +147,11 @@ def apply_allocation_to_vehicles(
     return tuple(updated)
 
 
-def _plan(vehicles: tuple[Vehicle, ...], mission: Mission) -> tuple[_Placement, ...]:
+def _plan(
+    vehicles: tuple[Vehicle, ...],
+    mission: Mission,
+    horizon: int,
+) -> tuple[_Placement, ...]:
     remaining: Remaining = {
         (area, capability): (
             mission.requirements[area].required_for(capability) * mission.constraints.target_mcc
@@ -159,6 +167,7 @@ def _plan(vehicles: tuple[Vehicle, ...], mission: Mission) -> tuple[_Placement, 
             vehicles=tuple(assignable),
             mission=mission,
             remaining=remaining,
+            horizon=horizon,
         )
         if candidate is None or candidate.utility < MIN_UTILITY:
             break
@@ -182,7 +191,7 @@ def _plan(vehicles: tuple[Vehicle, ...], mission: Mission) -> tuple[_Placement, 
         _consume(
             remaining=remaining,
             area=candidate.area,
-            effective=effective_capability(candidate.vehicle),
+            effective=horizon_capability(candidate.vehicle, mission, candidate.area, horizon),
             weight=candidate.weight,
         )
         assignable = [vehicle for vehicle in assignable if vehicle.id != candidate.vehicle.id]
@@ -203,6 +212,7 @@ def _best_candidate(
     vehicles: tuple[Vehicle, ...],
     mission: Mission,
     remaining: Remaining,
+    horizon: int,
 ) -> _Candidate | None:
     if all(value <= EPSILON for value in remaining.values()):
         return None
@@ -210,7 +220,8 @@ def _best_candidate(
         candidate
         for vehicle in vehicles
         for candidate in (
-            _candidate_for_area(vehicle, area, mission, remaining) for area in mission.areas
+            _candidate_for_area(vehicle, area, mission, remaining, horizon)
+            for area in mission.areas
         )
         if candidate is not None
     ]
@@ -224,8 +235,9 @@ def _candidate_for_area(
     area: str,
     mission: Mission,
     remaining: Remaining,
+    horizon: int,
 ) -> _Candidate | None:
-    effective = effective_capability(vehicle)
+    effective = horizon_capability(vehicle, mission, area, horizon)
     weight = SYNTHETIC_WEIGHT if vehicle.synthetic else 1.0
     covered = _covered_in_area(effective=effective, weight=weight, remaining=remaining, area=area)
     if covered < MIN_COVERAGE_GAIN:

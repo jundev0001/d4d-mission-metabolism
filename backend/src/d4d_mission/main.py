@@ -32,7 +32,8 @@ from d4d_mission.models import (
     StrictModel,
     VehicleTypeCatalogResponse,
 )
-from d4d_mission.state import MissionRuntime, UnknownTargetError, runtime_error_to_status
+from d4d_mission.runtime_support import UnknownTargetError
+from d4d_mission.state import MissionRuntime, runtime_error_to_status
 from d4d_mission.types import (
     MissionType,
     VehicleStatus,
@@ -49,6 +50,10 @@ DEFAULT_CORS_ORIGINS = [
 
 class MissionCreateRequest(StrictModel):
     seed: int = 42
+
+
+class MissionAdvanceRequest(StrictModel):
+    steps: int = Field(default=1, ge=1, le=12)
 
 
 class DeploymentItemRequest(StrictModel):
@@ -84,7 +89,7 @@ class MissionConfigureRequest(StrictModel):
     autonomy_level: float = Field(default=0.62, ge=0, le=1)
 
 
-def create_app() -> FastAPI:
+def create_app() -> FastAPI:  # noqa: PLR0915
     runtime = MissionRuntime(log_path=Path("data/blackbox.jsonl"))
     app = FastAPI(title="D4D Mission Metabolism API")
     app.add_middleware(
@@ -110,6 +115,10 @@ def create_app() -> FastAPI:
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         return runtime.configure_mission(mission=mission)
+
+    @app.post("/mission/advance", response_model=DashboardState)
+    async def advance_mission(payload: MissionAdvanceRequest) -> DashboardState:
+        return runtime.advance_time(steps=payload.steps)
 
     @app.get("/mission/types", response_model=MissionCatalogResponse)
     async def read_mission_types() -> MissionCatalogResponse:

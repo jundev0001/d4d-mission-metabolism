@@ -58,6 +58,7 @@ def compute_capability_report(
     assignments: tuple[Assignment, ...],
 ) -> CapabilityReport:
     effective = {vehicle.id: effective_capability(vehicle) for vehicle in vehicles}
+    vehicles_by_id = {vehicle.id: vehicle for vehicle in vehicles}
     area_reports: dict[str, AreaCoverage] = {}
     weighted_mcc_total = 0.0
     weighted_deficit_total = 0.0
@@ -73,6 +74,7 @@ def compute_capability_report(
                 capability=capability,
                 assignments=assignments,
                 effective=effective,
+                vehicles_by_id=vehicles_by_id,
             )
             score = clamp01(supply / (demand + EPSILON)) if demand > 0 else 1.0
             gap = clamp01((demand - supply) / (demand + EPSILON)) if demand > 0 else 0.0
@@ -96,9 +98,13 @@ def _supply_for_area(
     capability: CapabilityName,
     assignments: tuple[Assignment, ...],
     effective: dict[str, CapabilityVector],
+    vehicles_by_id: dict[str, Vehicle],
 ) -> float:
     supply = 0.0
     for assignment in assignments:
+        vehicle = vehicles_by_id.get(assignment.vehicle_id)
+        if vehicle is None or vehicle.status != VehicleStatus.ACTIVE:
+            continue
         vehicle_capability = effective.get(assignment.vehicle_id)
         if assignment.area == area and vehicle_capability is not None:
             supply += vehicle_capability.value_for(capability) * assignment.weight

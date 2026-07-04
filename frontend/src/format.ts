@@ -14,17 +14,12 @@ const EVENT_LABELS: Record<string, string> = {
   battery_drop: "배터리 급락",
   sensor_fail: "센서 고장",
   vehicle_lost: "기체 손실",
-  alert_flood: "경보 폭주",
   comm_degraded: "링크 저하",
   no_go: "No-go 생성",
   priority_shift: "우선순위 변경",
   data_stale: "정보 노후화",
   target_detected: "표적 탐지",
-  mobility_blocked: "기동 차단",
   weather_degraded: "기상 악화",
-  collision_risk: "충돌 위험",
-  sensor_confidence_drop: "센서 신뢰도 저하",
-  asset_added: "전력 추가",
   reserve_depleted: "예비 전력 고갈",
 }
 
@@ -44,10 +39,8 @@ const MICRO_ACTION_LABELS: Record<MicroActionType, string> = {
   reposition_relay: "중계 재배치",
   low_bandwidth: "저대역 모드",
   hold: "저속 대기",
-  suppress_alerts: "경보 병합",
   redistribute_coverage: "커버리지 재분배",
   reroute: "경로 재계획",
-  deconflict_paths: "경로 충돌 해소",
   reassign_role: "역할 재배정",
   handoff_target: "표적 인계",
   switch_sensor_mode: "센서 모드 전환",
@@ -59,7 +52,6 @@ const MICRO_ACTION_LABELS: Record<MicroActionType, string> = {
 }
 
 const CAUSE_LABELS: Record<string, string> = {
-  alert_flood: "경보 폭주",
   battery_drop: "배터리 급락",
   capability_deficit: "능력 결손",
   comm_degraded: "링크 저하",
@@ -80,13 +72,9 @@ const CAUSE_LABELS: Record<string, string> = {
   vehicle_lost: "기체 손실",
   data_stale: "정보 노후화",
   target_detected: "표적 탐지",
-  mobility_blocked: "기동 차단",
   weather_degraded: "기상 악화",
-  collision_risk: "충돌 위험",
   route_conflict: "경로 충돌",
-  sensor_confidence_drop: "센서 신뢰도 저하",
   sensor_confidence: "센서 신뢰도",
-  asset_added: "전력 추가",
   reserve_depleted: "예비 전력 고갈",
 }
 

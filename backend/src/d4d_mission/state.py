@@ -5,7 +5,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from d4d_mission.types import VehicleId, VehicleStatus
+
 from d4d_mission.allocator import apply_allocation_to_vehicles, plan_allocation
+from d4d_mission.battery_rotation import add_battery_rotation_recommendation
 from d4d_mission.blackbox import JsonlBlackBox
 from d4d_mission.capability_gap import analyze_capability_gaps
 from d4d_mission.deployment import DeploymentCount, DeploymentError, apply_fleet_deployment
@@ -34,6 +37,7 @@ from d4d_mission.runtime_support import (
     AREA_TARGET_EVENTS,
     VEHICLE_TARGET_EVENTS,
     UnknownTargetError,
+    advance_time_snapshot,
     record_calculation,
     refresh_allocation_snapshot,
     tune_vehicle_snapshot,
@@ -43,7 +47,6 @@ from d4d_mission.scenario import (
     create_initial_snapshot,
     refresh_snapshot,
 )
-from d4d_mission.types import EventType, VehicleId, VehicleStatus
 
 
 class MissionRuntime:
@@ -141,6 +144,7 @@ class MissionRuntime:
             vehicles=vehicles,
             assignments=plan.assignments,
         )
+        self._append_proactive_recommendations(trigger="battery_rotation_after_allocation")
         self._blackbox.record_model(
             scenario_time=self._snapshot.scenario_time,
             kind="decision",
@@ -165,6 +169,7 @@ class MissionRuntime:
             health=health,
             status=status,
         )
+        self._append_proactive_recommendations(trigger="battery_rotation_after_tune")
         self._blackbox.record_model(
             scenario_time=self._snapshot.scenario_time,
             kind="event",
@@ -182,6 +187,7 @@ class MissionRuntime:
             event=event,
             recommendation=card,
         )
+        self._append_proactive_recommendations(trigger=f"battery_rotation_after_{event.event_type}")
         self._blackbox.record_model(
             scenario_time=self._snapshot.scenario_time,
             kind="event",
@@ -203,6 +209,7 @@ class MissionRuntime:
 
     def decide(self, request: DecisionRequest) -> DashboardState:
         self._snapshot = decide_recommendation(snapshot=self._snapshot, request=request)
+        self._append_proactive_recommendations(trigger="battery_rotation_after_decision")
         resolved_card = find_recommendation(
             snapshot=self._snapshot,
             recommendation_id=request.recommendation_id,
@@ -231,8 +238,36 @@ class MissionRuntime:
     def metrics(self) -> MetricSnapshot:
         return self._snapshot.metrics
 
+    def advance_time(self, steps: int) -> DashboardState:
+        self._snapshot = advance_time_snapshot(snapshot=self._snapshot, steps=steps)
+        self._append_proactive_recommendations(trigger="battery_rotation_after_time_advance")
+        self._blackbox.record_model(
+            scenario_time=self._snapshot.scenario_time,
+            kind="mission",
+            summary=f"mission advanced {steps} step(s)",
+            model=self._snapshot,
+        )
+        record_calculation(self._blackbox, self._snapshot, "time_advance")
+        return self._snapshot
+
     def replay(self) -> ReplayResponse:
         return ReplayResponse(entries=self._blackbox.entries())
+
+    def _append_proactive_recommendations(self, trigger: str) -> None:
+        existing_ids = {card.id for card in self._snapshot.recommendations}
+        self._snapshot = add_battery_rotation_recommendation(snapshot=self._snapshot)
+        new_cards = tuple(
+            card for card in self._snapshot.recommendations if card.id not in existing_ids
+        )
+        for card in new_cards:
+            self._blackbox.record_model(
+                scenario_time=self._snapshot.scenario_time,
+                kind="recommendation",
+                summary=card.title,
+                model=card,
+            )
+        if len(new_cards) > 0:
+            record_calculation(self._blackbox, self._snapshot, trigger)
 
     def _ensure_target_exists(self, event: EventRequest) -> None:
         if event.event_type in AREA_TARGET_EVENTS:
@@ -246,9 +281,8 @@ class MissionRuntime:
                 raise UnknownTargetError(target=event.target)
             return
 
-        if event.event_type is not EventType.ALERT_FLOOD:
-            msg = f"unsupported event type: {event.event_type}"
-            raise ValueError(msg)
+        msg = f"unsupported event type: {event.event_type}"
+        raise ValueError(msg)
 
 
 def runtime_error_to_status(error: Exception) -> int:

@@ -28,16 +28,11 @@ def build_recommendation(snapshot: DashboardState, event: EventRequest) -> Recom
         EventType.GPS_DROP: _gps_drop_card,
         EventType.SENSOR_FAIL: _sensor_fail_card,
         EventType.VEHICLE_LOST: _vehicle_lost_card,
-        EventType.ALERT_FLOOD: _alert_flood_card,
         EventType.NO_GO: _no_go_card,
         EventType.PRIORITY_SHIFT: _no_go_card,
         EventType.DATA_STALE: _data_stale_card,
         EventType.TARGET_DETECTED: _target_detected_card,
-        EventType.MOBILITY_BLOCKED: _mobility_blocked_card,
         EventType.WEATHER_DEGRADED: _weather_degraded_card,
-        EventType.COLLISION_RISK: _collision_risk_card,
-        EventType.SENSOR_CONFIDENCE_DROP: _sensor_confidence_drop_card,
-        EventType.ASSET_ADDED: _asset_added_card,
         EventType.RESERVE_DEPLETED: _reserve_depleted_card,
     }
     return builders[event.event_type](card_id, snapshot, event)
@@ -255,27 +250,6 @@ def _vehicle_lost_card(
     )
 
 
-def _alert_flood_card(
-    card_id: str,
-    _snapshot: DashboardState,
-    event: EventRequest,
-) -> RecommendationCard:
-    return make_card(
-        card_id=card_id,
-        title="Alert flood suppression",
-        causes=("alert_flood", "operator_load"),
-        event=event,
-        actions=(
-            card_action(
-                "system",
-                MicroActionType.SUPPRESS_ALERTS,
-                None,
-                "merge low-priority alerts into one operator card",
-            ),
-        ),
-    )
-
-
 def _no_go_card(card_id: str, snapshot: DashboardState, event: EventRequest) -> RecommendationCard:
     area, gap = _focus(snapshot=snapshot, event=event)
     reserve = best_vehicle_for(snapshot, CapabilityName.RESERVE, prefer_area=area)
@@ -357,23 +331,6 @@ def _target_detected_card(
     )
 
 
-def _mobility_blocked_card(
-    card_id: str,
-    _snapshot: DashboardState,
-    event: EventRequest,
-) -> RecommendationCard:
-    return make_card(
-        card_id=card_id,
-        title=f"{event.target} mobility blocked",
-        causes=("mobility_blocked", "route_conflict"),
-        event=event,
-        actions=(
-            card_action(event.target, MicroActionType.REROUTE, None, "avoid blocked terrain"),
-            card_action(event.target, MicroActionType.SYNC_DATA, None, "share mobility obstacle"),
-        ),
-    )
-
-
 def _weather_degraded_card(
     card_id: str,
     snapshot: DashboardState,
@@ -407,84 +364,6 @@ def _weather_degraded_card(
                 MicroActionType.LAUNCH_RESERVE,
                 event.target,
                 "add recovery margin",
-            ),
-        ),
-    )
-
-
-def _collision_risk_card(
-    card_id: str,
-    _snapshot: DashboardState,
-    event: EventRequest,
-) -> RecommendationCard:
-    return make_card(
-        card_id=card_id,
-        title=f"{event.target} path conflict",
-        causes=("collision_risk", "route_conflict"),
-        event=event,
-        actions=(
-            card_action(
-                event.target,
-                MicroActionType.DECONFLICT_PATHS,
-                None,
-                "separate route timing",
-            ),
-            card_action(event.target, MicroActionType.HOLD, None, "hold until path is clear"),
-        ),
-    )
-
-
-def _sensor_confidence_drop_card(
-    card_id: str,
-    snapshot: DashboardState,
-    event: EventRequest,
-) -> RecommendationCard:
-    backup = best_vehicle_for(
-        snapshot=snapshot,
-        capability=CapabilityName.VISUAL_RECON,
-        fallback="UxV-01",
-    )
-    return make_card(
-        card_id=card_id,
-        title=f"{event.target} sensor confidence drop",
-        causes=("sensor_confidence_drop", "recon_gap"),
-        event=event,
-        actions=(
-            card_action(event.target, MicroActionType.SWITCH_SENSOR_MODE, None, "raise confidence"),
-            card_action(backup, MicroActionType.HANDOFF_TARGET, None, "cross-check observation"),
-            card_action(event.target, MicroActionType.SYNC_DATA, None, "sync low-confidence mark"),
-        ),
-    )
-
-
-def _asset_added_card(
-    card_id: str,
-    snapshot: DashboardState,
-    event: EventRequest,
-) -> RecommendationCard:
-    reserve = best_vehicle_for(
-        snapshot=snapshot,
-        capability=CapabilityName.RESERVE,
-        fallback="UxV-06",
-    )
-    return make_card(
-        card_id=card_id,
-        title=f"{event.target} asset added",
-        causes=("asset_added", "reserve_activation"),
-        event=event,
-        actions=(
-            card_action(
-                reserve,
-                MicroActionType.LAUNCH_RESERVE,
-                event.target,
-                "bring new asset online",
-            ),
-            card_action(reserve, MicroActionType.REASSIGN_ROLE, event.target, "fit current demand"),
-            card_action(
-                "system",
-                MicroActionType.SYNC_DATA,
-                event.target,
-                "broadcast new capability",
             ),
         ),
     )

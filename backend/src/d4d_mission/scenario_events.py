@@ -19,9 +19,6 @@ def apply_event_to_vehicle(vehicle: Vehicle, event: EventRequest) -> Vehicle:
         EventType.GPS_DROP: _apply_gps_drop,
         EventType.SENSOR_FAIL: _apply_sensor_fail,
         EventType.VEHICLE_LOST: _apply_vehicle_lost,
-        EventType.MOBILITY_BLOCKED: _apply_mobility_blocked,
-        EventType.COLLISION_RISK: _apply_collision_risk,
-        EventType.SENSOR_CONFIDENCE_DROP: _apply_sensor_confidence_drop,
         EventType.WEATHER_DEGRADED: _apply_weather_degraded,
     }
     return handlers.get(event.event_type, _unchanged_vehicle)(vehicle, event)
@@ -71,45 +68,6 @@ def _apply_vehicle_lost(vehicle: Vehicle, event: EventRequest) -> Vehicle:
     if event.event_type == EventType.VEHICLE_LOST and vehicle.id == event.target:
         lost = with_health(vehicle, HealthPatch(health=0.0, reason="vehicle lost"))
         return lost.model_copy(update={"status": VehicleStatus.LOST})
-    return vehicle
-
-
-def _apply_mobility_blocked(vehicle: Vehicle, event: EventRequest) -> Vehicle:
-    if event.event_type == EventType.MOBILITY_BLOCKED and vehicle.id == event.target:
-        return with_health(
-            vehicle,
-            HealthPatch(
-                nav=vehicle.health.nav * (1 - (event.severity * 0.45)),
-                confidence=vehicle.health.confidence * (1 - (event.severity * 0.2)),
-                reason="mobility blocked",
-            ),
-        )
-    return vehicle
-
-
-def _apply_collision_risk(vehicle: Vehicle, event: EventRequest) -> Vehicle:
-    if event.event_type == EventType.COLLISION_RISK and vehicle.id == event.target:
-        return with_health(
-            vehicle,
-            HealthPatch(
-                nav=vehicle.health.nav * (1 - (event.severity * 0.18)),
-                confidence=vehicle.health.confidence * (1 - (event.severity * 0.16)),
-                reason="path deconfliction required",
-            ),
-        )
-    return vehicle
-
-
-def _apply_sensor_confidence_drop(vehicle: Vehicle, event: EventRequest) -> Vehicle:
-    if event.event_type == EventType.SENSOR_CONFIDENCE_DROP and vehicle.id == event.target:
-        return with_health(
-            vehicle,
-            HealthPatch(
-                sensor=vehicle.health.sensor * (1 - (event.severity * 0.35)),
-                confidence=vehicle.health.confidence * (1 - (event.severity * 0.4)),
-                reason="sensor confidence degraded",
-            ),
-        )
     return vehicle
 
 
@@ -176,12 +134,7 @@ def apply_event_to_mission(mission: Mission, event: EventRequest) -> Mission:
             | EventType.BATTERY_DROP
             | EventType.SENSOR_FAIL
             | EventType.VEHICLE_LOST
-            | EventType.ALERT_FLOOD
             | EventType.COMM_DEGRADED
-            | EventType.MOBILITY_BLOCKED
-            | EventType.COLLISION_RISK
-            | EventType.SENSOR_CONFIDENCE_DROP
-            | EventType.ASSET_ADDED
         ):
             return mission
     return mission.model_copy(update=updates)
@@ -247,16 +200,11 @@ def event_summary(event: EventRequest) -> str:
         EventType.GPS_DROP: f"{event.target} entered GPS-denied navigation",
         EventType.SENSOR_FAIL: f"{event.target} sensor payload failed",
         EventType.VEHICLE_LOST: f"{event.target} is no longer contributing capability",
-        EventType.ALERT_FLOOD: "Low-priority alerts are saturating operator attention",
         EventType.NO_GO: f"{event.target} became a no-go area",
         EventType.PRIORITY_SHIFT: f"{event.target} mission priority increased",
         EventType.DATA_STALE: f"{event.target} area intelligence is stale",
         EventType.TARGET_DETECTED: f"{event.target} area target confidence increased",
-        EventType.MOBILITY_BLOCKED: f"{event.target} mobility is blocked by terrain",
         EventType.WEATHER_DEGRADED: f"{event.target} area weather degraded sensing and nav",
-        EventType.COLLISION_RISK: f"{event.target} has path collision risk",
-        EventType.SENSOR_CONFIDENCE_DROP: f"{event.target} sensor confidence dropped",
-        EventType.ASSET_ADDED: f"{event.target} area has a new asset available",
         EventType.RESERVE_DEPLETED: f"{event.target} reserve budget is depleted",
     }
     return summaries[event.event_type]
