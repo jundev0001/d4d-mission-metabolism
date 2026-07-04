@@ -94,9 +94,7 @@ def test_replacement_role_and_area_follow_target_area() -> None:
     event = EventRequest(event_type=EventType.VEHICLE_LOST, target="UxV-05", severity=0.8)
     card = build_recommendation(snapshot=snapshot, event=event)
     reserve_id = next(
-        action.vehicle_id
-        for action in card.actions
-        if action.action == MicroActionType.REPLACE
+        action.vehicle_id for action in card.actions if action.action == MicroActionType.REPLACE
     )
 
     stressed = apply_event_to_snapshot(snapshot=snapshot, event=event, recommendation=card)

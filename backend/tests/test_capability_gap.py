@@ -9,9 +9,7 @@ def _snapshot_with_lost(*vehicle_ids: str) -> DashboardState:
     snapshot = create_initial_snapshot(seed=13)
     lost = set(vehicle_ids)
     vehicles = tuple(
-        vehicle.model_copy(update={"status": VehicleStatus.LOST})
-        if vehicle.id in lost
-        else vehicle
+        vehicle.model_copy(update={"status": VehicleStatus.LOST}) if vehicle.id in lost else vehicle
         for vehicle in snapshot.vehicles
     )
     return snapshot.model_copy(update={"vehicles": vehicles})
@@ -77,9 +75,7 @@ def test_losing_relay_vehicle_surfaces_b_relay_gap() -> None:
         mission=degraded.mission,
         assignments=degraded.assignments,
     )
-    relay_b = [
-        gap for gap in gaps if gap.area == "B" and gap.capability == CapabilityName.RELAY
-    ]
+    relay_b = [gap for gap in gaps if gap.area == "B" and gap.capability == CapabilityName.RELAY]
     assert len(relay_b) == 1
     assert relay_b[0].deficit_ratio > 0
 

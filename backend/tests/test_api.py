@@ -83,8 +83,7 @@ def test_api_capability_gaps_rank_after_vehicle_loss() -> None:
     healthy = client.post("/capability/gaps")
     assert healthy.status_code == 200
     assert not any(
-        gap["area"] == "B" and gap["capability"] == "relay"
-        for gap in healthy.json()["gaps"]
+        gap["area"] == "B" and gap["capability"] == "relay" for gap in healthy.json()["gaps"]
     )
 
     loss = client.post(

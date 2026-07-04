@@ -72,6 +72,28 @@ describe("map view", () => {
     expect(assetGlyph).toHaveAttribute("transform", "translate(54 44) scale(0.86)")
   })
 
+  it("Given the COP is visible When the operator wheels over it Then the page scroll default is blocked", () => {
+    const addEventListener = vi.spyOn(SVGSVGElement.prototype, "addEventListener")
+    render(<MapView />)
+    const svg = copSvg()
+    vi.spyOn(svg, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ height: 860, width: 1000, x: 0, y: 0 }),
+    )
+
+    const wheelEvent = new WheelEvent("wheel", {
+      bubbles: true,
+      cancelable: true,
+      clientX: 500,
+      clientY: 430,
+      deltaY: -120,
+    })
+    const dispatched = svg.dispatchEvent(wheelEvent)
+
+    expect(addEventListener).toHaveBeenCalledWith("wheel", expect.any(Function), { passive: false })
+    expect(dispatched).toBe(false)
+    expect(wheelEvent.defaultPrevented).toBe(true)
+  })
+
   it("Given deployed UxVs When an asset is removed from the COP menu Then fleet deployment is updated", async () => {
     useMissionStore.setState({ dashboard: makeMapDashboard() })
     render(<MapView />)

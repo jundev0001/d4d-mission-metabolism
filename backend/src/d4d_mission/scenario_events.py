@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import assert_never
 
 from d4d_mission.capability import clamp01
-from d4d_mission.models import EventRequest, HealthState, Mission, Vehicle
+from d4d_mission.models import CapabilityDemand, EventRequest, HealthState, Mission, Vehicle
 from d4d_mission.types import EventType, VehicleStatus
 
 type VehicleEventHandler = Callable[[Vehicle, EventRequest], Vehicle]
+type MissionUpdateValue = dict[str, CapabilityDemand] | dict[str, float] | tuple[str, ...]
 
 
 def apply_event_to_vehicle(vehicle: Vehicle, event: EventRequest) -> Vehicle:
@@ -131,50 +133,87 @@ def _unchanged_vehicle(vehicle: Vehicle, _event: EventRequest) -> Vehicle:
 
 
 def apply_event_to_mission(mission: Mission, event: EventRequest) -> Mission:
-    if event.event_type in {EventType.COMM_JAM, EventType.WEATHER_DEGRADED}:
-        threats = _threats_with_event(mission=mission, event=event)
-        return mission.model_copy(update={"area_threats": threats})
-    if event.event_type == EventType.NO_GO:
-        no_go = tuple(sorted({*mission.no_go_areas, event.target}))
-        threats = _threats_with_event(mission=mission, event=event)
-        return mission.model_copy(update={"area_threats": threats, "no_go_areas": no_go})
-    if event.event_type == EventType.PRIORITY_SHIFT:
-        requirements = dict(mission.requirements)
-        current = requirements[event.target]
-        requirements[event.target] = current.model_copy(
-            update={"visual_recon": current.visual_recon + 0.28, "relay": current.relay + 0.18},
-        )
-        return mission.model_copy(update={"requirements": requirements})
-    if event.event_type == EventType.DATA_STALE:
-        requirements = dict(mission.requirements)
-        current = requirements[event.target]
-        requirements[event.target] = current.model_copy(
-            update={
-                "visual_recon": current.visual_recon + (event.severity * 0.18),
-                "overwatch": current.overwatch + (event.severity * 0.08),
-            },
-        )
-        return mission.model_copy(update={"requirements": requirements})
-    if event.event_type == EventType.TARGET_DETECTED:
-        requirements = dict(mission.requirements)
-        current = requirements[event.target]
-        requirements[event.target] = current.model_copy(
-            update={
-                "visual_recon": current.visual_recon + (event.severity * 0.22),
-                "overwatch": current.overwatch + (event.severity * 0.24),
-                "relay": current.relay + (event.severity * 0.1),
-            },
-        )
-        threats = _threats_with_event(mission=mission, event=event)
-        return mission.model_copy(update={"requirements": requirements, "area_threats": threats})
-    if event.event_type == EventType.RESERVE_DEPLETED:
-        requirements = dict(mission.requirements)
-        current = requirements[event.target]
-        requirements[event.target] = current.model_copy(
-            update={"reserve": current.reserve + (event.severity * 0.2)},
-        )
-        return mission.model_copy(update={"requirements": requirements})
-    return mission
+    updates: dict[str, MissionUpdateValue] = {}
+    match event.event_type:
+        case EventType.COMM_JAM | EventType.WEATHER_DEGRADED:
+            updates["area_threats"] = _threats_with_event(mission=mission, event=event)
+        case EventType.NO_GO:
+            updates["area_threats"] = _threats_with_event(mission=mission, event=event)
+            updates["no_go_areas"] = tuple(sorted({*mission.no_go_areas, event.target}))
+        case EventType.PRIORITY_SHIFT:
+            updates["requirements"] = _requirements_with_delta(
+                mission=mission,
+                target=event.target,
+                delta=RequirementDelta(visual_recon=0.28, relay=0.18),
+            )
+        case EventType.DATA_STALE:
+            updates["requirements"] = _requirements_with_delta(
+                mission=mission,
+                target=event.target,
+                delta=RequirementDelta(
+                    visual_recon=event.severity * 0.18,
+                    overwatch=event.severity * 0.08,
+                ),
+            )
+        case EventType.TARGET_DETECTED:
+            updates["requirements"] = _requirements_with_delta(
+                mission=mission,
+                target=event.target,
+                delta=RequirementDelta(
+                    visual_recon=event.severity * 0.22,
+                    relay=event.severity * 0.1,
+                    overwatch=event.severity * 0.24,
+                ),
+            )
+            updates["area_threats"] = _threats_with_event(mission=mission, event=event)
+        case EventType.RESERVE_DEPLETED:
+            updates["requirements"] = _requirements_with_delta(
+                mission=mission,
+                target=event.target,
+                delta=RequirementDelta(reserve=event.severity * 0.2),
+            )
+        case (
+            EventType.GPS_DROP
+            | EventType.BATTERY_DROP
+            | EventType.SENSOR_FAIL
+            | EventType.VEHICLE_LOST
+            | EventType.ALERT_FLOOD
+            | EventType.COMM_DEGRADED
+            | EventType.MOBILITY_BLOCKED
+            | EventType.COLLISION_RISK
+            | EventType.SENSOR_CONFIDENCE_DROP
+            | EventType.ASSET_ADDED
+        ):
+            return mission
+        case unreachable:
+            assert_never(unreachable)
+    return mission.model_copy(update=updates)
+
+
+@dataclass(frozen=True, slots=True)
+class RequirementDelta:
+    visual_recon: float = 0.0
+    relay: float = 0.0
+    overwatch: float = 0.0
+    reserve: float = 0.0
+
+
+def _requirements_with_delta(
+    mission: Mission,
+    target: str,
+    delta: RequirementDelta,
+) -> dict[str, CapabilityDemand]:
+    requirements = dict(mission.requirements)
+    current = requirements[target]
+    requirements[target] = current.model_copy(
+        update={
+            "visual_recon": current.visual_recon + delta.visual_recon,
+            "relay": current.relay + delta.relay,
+            "overwatch": current.overwatch + delta.overwatch,
+            "reserve": current.reserve + delta.reserve,
+        },
+    )
+    return requirements
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { minimumCoverageForArea } from "../mapCoverage"
 import {
   assetMenuStateFromClientPoint,
@@ -22,6 +22,7 @@ const GRID_LINES = [12, 24, 36, 48, 60, 72, 84] as const
 
 export function MapView() {
   const frameRef = useRef<HTMLDivElement | null>(null)
+  const mapRef = useRef<SVGSVGElement | null>(null)
   const [activeAssetId, setActiveAssetId] = useState<string | null>(null)
   const [assetMenu, setAssetMenu] = useState<MapAssetMenuState | null>(null)
   const [dragState, setDragState] = useState<MapDragState | null>(null)
@@ -32,6 +33,31 @@ export function MapView() {
   const mapAreas = useMissionStore((state) => state.customScenario.map.areas)
   const mapName = useMissionStore((state) => state.customScenario.map.name)
   const profiles = useMissionStore((state) => state.vehicleTypeProfiles)
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (map === null) {
+      return
+    }
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault()
+      const rect = map.getBoundingClientRect()
+      setViewBox((current) =>
+        zoomViewBox({
+          clientX: event.clientX,
+          clientY: event.clientY,
+          deltaY: event.deltaY,
+          rect,
+          viewBox: current,
+        }),
+      )
+    }
+    map.addEventListener("wheel", handleWheel, { passive: false })
+    return () => {
+      map.removeEventListener("wheel", handleWheel)
+    }
+  }, [])
+
   if (!dashboard) {
     return null
   }
@@ -63,6 +89,7 @@ export function MapView() {
       </div>
       <div className="cop-frame" ref={frameRef}>
         <svg
+          ref={mapRef}
           viewBox={formatViewBox(viewBox)}
           className={`cop-map ${dragState ? "is-panning" : ""}`}
           role="img"
@@ -101,19 +128,6 @@ export function MapView() {
               event.currentTarget.releasePointerCapture?.(event.pointerId)
             }
             setDragState(null)
-          }}
-          onWheel={(event) => {
-            event.preventDefault()
-            const rect = event.currentTarget.getBoundingClientRect()
-            setViewBox((current) =>
-              zoomViewBox({
-                clientX: event.clientX,
-                clientY: event.clientY,
-                deltaY: event.deltaY,
-                rect,
-                viewBox: current,
-              }),
-            )
           }}
         >
           <defs>

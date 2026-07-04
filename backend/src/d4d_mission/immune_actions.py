@@ -106,9 +106,7 @@ def _area_centroid(vehicles: tuple[Vehicle, ...], area: str, default: Point) -> 
     peers = [
         vehicle
         for vehicle in vehicles
-        if vehicle.area == area
-        and vehicle.status == VehicleStatus.ACTIVE
-        and not vehicle.synthetic
+        if vehicle.area == area and vehicle.status == VehicleStatus.ACTIVE and not vehicle.synthetic
     ]
     if len(peers) == 0:
         return default
