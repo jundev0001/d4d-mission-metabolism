@@ -2,7 +2,7 @@ import { Send } from "lucide-react"
 import { useState } from "react"
 import { eventLabel, targetLabel } from "../format"
 import { useMissionStore } from "../store"
-import { EventTypes, type DashboardState, type EventType } from "../types"
+import { type DashboardState, type EventType, EventTypes } from "../types"
 
 const AREA_TARGET_EVENTS: readonly EventType[] = [
   "comm_jam",

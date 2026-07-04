@@ -6,6 +6,25 @@ from d4d_mission.main import create_app
 from d4d_mission.types import DecisionAction, EventType
 
 
+def test_api_allows_vite_preview_origin_for_browser_qa() -> None:
+    client = TestClient(create_app())
+    origin = "http://127.0.0.1:4173"
+
+    state_response = client.get("/", headers={"Origin": origin})
+    preflight_response = client.options(
+        "/",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert state_response.status_code == 200
+    assert state_response.headers["access-control-allow-origin"] == origin
+    assert preflight_response.status_code == 200
+    assert preflight_response.headers["access-control-allow-origin"] == origin
+
+
 def test_api_mission_event_decision_and_replay_flow() -> None:
     client = TestClient(create_app())
 

@@ -10,11 +10,15 @@ import {
   requirementsForMissionType,
 } from "../customScenario"
 import { capabilityLabel, eventLabel, targetLabel } from "../format"
-import { CapabilityNames, EventTypes, MissionTypes, type MissionType } from "../types"
+import { CapabilityNames, EventTypes, type MissionType, MissionTypes } from "../types"
 import { EditorHeader, RangeField } from "./ScenarioBuilderFields"
 
 type AreaPatch = Partial<Omit<CustomMapArea, "id">>
 type DrawMode = "add" | "replace"
+type DraftPoint = {
+  readonly key: string
+  readonly point: CustomPoint
+}
 
 export function ScenarioNodeEditor({
   node,
@@ -90,7 +94,7 @@ export function ScenarioMapEditor({
   readonly selectedArea: CustomMapArea
 }) {
   const [drawMode, setDrawMode] = useState<DrawMode | null>(null)
-  const [draftPoints, setDraftPoints] = useState<readonly CustomPoint[]>([])
+  const [draftPoints, setDraftPoints] = useState<readonly DraftPoint[]>([])
 
   function startDrawing(mode: DrawMode): void {
     setDrawMode(mode)
@@ -106,12 +110,13 @@ export function ScenarioMapEditor({
     if (draftPoints.length < 3 || drawMode === null) {
       return
     }
+    const points = draftPoints.map((draftPoint) => draftPoint.point)
     if (drawMode === "add") {
-      onAddArea(draftPoints)
+      onAddArea(points)
     } else {
-      const centroid = areaCentroid({ points: draftPoints })
+      const centroid = areaCentroid({ points })
       onChange({
-        points: [...draftPoints],
+        points,
         label_position: { x: clamp(centroid.x - 6, 0, 100), y: clamp(centroid.y - 3, 0, 86) },
         metric_position: { x: clamp(centroid.x - 6, 0, 100), y: clamp(centroid.y + 3, 0, 86) },
         threat_position: centroid,
@@ -129,7 +134,7 @@ export function ScenarioMapEditor({
       x: roundCoordinate(((event.clientX - rect.left) / rect.width) * 100),
       y: roundCoordinate(((event.clientY - rect.top) / rect.height) * 86),
     }
-    setDraftPoints([...draftPoints, point])
+    setDraftPoints([...draftPoints, { key: `${point.x}-${point.y}-${draftPoints.length}`, point }])
   }
 
   return (
@@ -247,10 +252,17 @@ export function ScenarioMapEditor({
           <>
             <polyline
               className="area-draw-draft"
-              points={draftPoints.map((point) => `${point.x},${point.y}`).join(" ")}
+              points={draftPoints
+                .map((draftPoint) => `${draftPoint.point.x},${draftPoint.point.y}`)
+                .join(" ")}
             />
-            {draftPoints.map((point, index) => (
-              <circle cx={point.x} cy={point.y} r="1.4" key={`${point.x}-${point.y}-${index}`} />
+            {draftPoints.map((draftPoint) => (
+              <circle
+                cx={draftPoint.point.x}
+                cy={draftPoint.point.y}
+                r="1.4"
+                key={draftPoint.key}
+              />
             ))}
           </>
         ) : null}

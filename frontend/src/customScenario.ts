@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { EventTypes, MissionTypes, type MissionType } from "./types"
+import { EventTypes, type MissionType, MissionTypes } from "./types"
 
 const VIEWBOX_HEIGHT = 86
 export const MAX_SCENARIO_AREAS = 12
@@ -20,7 +20,11 @@ const CapabilityDemandSchema = z.object({
 })
 
 export const CustomMapAreaSchema = z.object({
-  id: z.string().min(1).max(40).regex(/^[A-Za-z0-9_-]+$/),
+  id: z
+    .string()
+    .min(1)
+    .max(40)
+    .regex(/^[A-Za-z0-9_-]+$/),
   label: z.string().min(1).max(24),
   points: z.array(PointSchema).min(3).max(MAX_AREA_POINTS),
   label_position: PointSchema,
@@ -130,17 +134,15 @@ export function pointsToPath(points: readonly CustomPoint[]): string {
   if (first === undefined) {
     return ""
   }
-  const segments = rest.map(
-    (point) => `L${formatPathNumber(point.x)} ${formatPathNumber(point.y)}`,
-  )
+  const segments = rest.map((point) => `L${formatPathNumber(point.x)} ${formatPathNumber(point.y)}`)
   return `M${formatPathNumber(first.x)} ${formatPathNumber(first.y)} ${segments.join(" ")} Z`
 }
 
 export function areaCentroid(area: { readonly points: readonly CustomPoint[] }): CustomPoint {
-  const total = area.points.reduce(
-    (sum, point) => ({ x: sum.x + point.x, y: sum.y + point.y }),
-    { x: 0, y: 0 },
-  )
+  const total = area.points.reduce((sum, point) => ({ x: sum.x + point.x, y: sum.y + point.y }), {
+    x: 0,
+    y: 0,
+  })
   return {
     x: roundCoordinate(total.x / area.points.length),
     y: roundCoordinate(total.y / area.points.length),

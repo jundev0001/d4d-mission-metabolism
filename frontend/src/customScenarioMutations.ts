@@ -64,7 +64,8 @@ export function addMapArea(
   if (document.map.areas.length >= MAX_SCENARIO_AREAS) {
     return { document, selectedAreaId: document.map.areas.at(0)?.id ?? "" }
   }
-  const areaPoints = points === undefined || points.length < 3 ? defaultAreaPoints(document) : points
+  const areaPoints =
+    points === undefined || points.length < 3 ? defaultAreaPoints(document) : points
   const centroid = areaCentroid({ points: areaPoints })
   const id = nextAreaId(document)
   const area: CustomMapArea = {
