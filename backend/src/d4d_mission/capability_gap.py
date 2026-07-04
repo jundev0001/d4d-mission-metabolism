@@ -10,7 +10,7 @@ from d4d_mission.models import (
     Mission,
     Vehicle,
 )
-from d4d_mission.types import CAPABILITY_NAMES, CapabilityName
+from d4d_mission.types import CAPABILITY_NAMES, CapabilityName, VehicleStatus
 
 MIN_DEFICIT_RATIO: Final = 0.05
 CONTRIBUTION_EPSILON: Final = 0.02
@@ -32,6 +32,7 @@ def analyze_capability_gaps(
     immune system and allocator can target the most damaging gap first.
     """
     effective = {vehicle.id: effective_capability(vehicle) for vehicle in vehicles}
+    vehicles_by_id = {vehicle.id: vehicle for vehicle in vehicles}
     gaps: list[CapabilityGap] = []
     for area in mission.areas:
         requirement = mission.requirements[area]
@@ -45,6 +46,7 @@ def analyze_capability_gaps(
                 capability=capability,
                 assignments=assignments,
                 effective=effective,
+                vehicles_by_id=vehicles_by_id,
             )
             supply = sum(contributions)
             deficit_ratio = clamp01((demand - supply) / (demand + EPSILON))
@@ -83,10 +85,14 @@ def _contributions(
     capability: CapabilityName,
     assignments: tuple[Assignment, ...],
     effective: dict[str, CapabilityVector],
+    vehicles_by_id: dict[str, Vehicle],
 ) -> tuple[float, ...]:
     contributions: list[float] = []
     for assignment in assignments:
         if assignment.area != area:
+            continue
+        vehicle = vehicles_by_id.get(assignment.vehicle_id)
+        if vehicle is None or vehicle.status != VehicleStatus.ACTIVE:
             continue
         vector = effective.get(assignment.vehicle_id)
         if vector is None:

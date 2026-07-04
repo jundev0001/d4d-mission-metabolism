@@ -115,7 +115,7 @@ def _logistic(strain: float) -> float:
 
 
 def _average_comm_loss(snapshot: DashboardState) -> float:
-    active = [vehicle for vehicle in snapshot.vehicles if vehicle.status != VehicleStatus.LOST]
+    active = [vehicle for vehicle in snapshot.vehicles if vehicle.status == VehicleStatus.ACTIVE]
     if len(active) == 0:
         return 1.0
     return clamp01(sum(1 - vehicle.health.comm for vehicle in active) / len(active))
@@ -205,7 +205,7 @@ def _relay_contributions(
         if assignment.area != area:
             continue
         vehicle = vehicles_by_id.get(assignment.vehicle_id)
-        if vehicle is None:
+        if vehicle is None or vehicle.status != VehicleStatus.ACTIVE:
             continue
         relay_supply = effective_capability(vehicle).relay * assignment.weight
         if relay_supply > 0:

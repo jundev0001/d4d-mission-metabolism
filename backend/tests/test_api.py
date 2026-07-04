@@ -229,6 +229,42 @@ def test_api_allocate_applies_and_explains() -> None:
     assert all(vehicle.area != "GCS" for vehicle in state.vehicles if vehicle.id in assigned_ids)
 
 
+def test_api_advance_drains_battery_and_adds_proactive_rotation_card() -> None:
+    client = make_client()
+
+    allocation = client.post("/allocate")
+    assert allocation.status_code == 200
+    before = response_model(client.get("/"), DashboardState)
+    active_vehicle = next(vehicle for vehicle in before.vehicles if vehicle.status == "active")
+
+    response = client.post("/mission/advance", json={"steps": 3})
+
+    assert response.status_code == 200
+    after = response_model(response, DashboardState)
+    advanced_vehicle = next(
+        vehicle for vehicle in after.vehicles if vehicle.id == active_vehicle.id
+    )
+    assert after.scenario_time == before.scenario_time + 90
+    assert advanced_vehicle.health.battery < active_vehicle.health.battery
+    assert any("predicted_battery_drop" in card.causes for card in after.recommendations)
+
+
+def test_api_advance_charges_standby_assets_at_gcs() -> None:
+    client = make_client()
+    before = response_model(client.get("/"), DashboardState)
+    charging_asset = next(vehicle for vehicle in before.vehicles if vehicle.id == "UxV-02")
+
+    response = client.post("/mission/advance", json={"steps": 2})
+
+    assert response.status_code == 200
+    after = response_model(response, DashboardState)
+    charged_asset = next(vehicle for vehicle in after.vehicles if vehicle.id == "UxV-02")
+    assert charged_asset.area == "GCS"
+    assert charged_asset.status == "standby"
+    assert charged_asset.health.battery > charging_asset.health.battery
+    assert charged_asset.health.battery <= 1.0
+
+
 def test_api_configures_custom_areas_before_allocation() -> None:
     client = make_client()
 

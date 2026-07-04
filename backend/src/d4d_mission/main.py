@@ -52,6 +52,10 @@ class MissionCreateRequest(StrictModel):
     seed: int = 42
 
 
+class MissionAdvanceRequest(StrictModel):
+    steps: int = Field(default=1, ge=1, le=12)
+
+
 class DeploymentItemRequest(StrictModel):
     vehicle_type: VehicleType
     count: int = Field(ge=0, le=12)
@@ -85,7 +89,7 @@ class MissionConfigureRequest(StrictModel):
     autonomy_level: float = Field(default=0.62, ge=0, le=1)
 
 
-def create_app() -> FastAPI:
+def create_app() -> FastAPI:  # noqa: PLR0915
     runtime = MissionRuntime(log_path=Path("data/blackbox.jsonl"))
     app = FastAPI(title="D4D Mission Metabolism API")
     app.add_middleware(
@@ -111,6 +115,10 @@ def create_app() -> FastAPI:
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         return runtime.configure_mission(mission=mission)
+
+    @app.post("/mission/advance", response_model=DashboardState)
+    async def advance_mission(payload: MissionAdvanceRequest) -> DashboardState:
+        return runtime.advance_time(steps=payload.steps)
 
     @app.get("/mission/types", response_model=MissionCatalogResponse)
     async def read_mission_types() -> MissionCatalogResponse:

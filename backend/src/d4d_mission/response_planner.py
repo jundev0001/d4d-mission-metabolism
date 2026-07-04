@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from d4d_mission.allocator import plan_allocation
+from d4d_mission.battery_rotation import is_battery_viable_replacement
 from d4d_mission.capability import effective_capability
 from d4d_mission.capability_gap import analyze_capability_gaps, top_gap
 from d4d_mission.immune_actions import apply_micro_action
@@ -53,6 +54,15 @@ class _ResponseContext:
     area: str
     current_assignments: dict[str, Assignment]
     desired_assignments: dict[str, Assignment]
+
+
+@dataclass(frozen=True, slots=True)
+class _SupportActionIntent:
+    capability: CapabilityName
+    active_action: MicroActionType
+    reserve_action: MicroActionType
+    active_rationale: str
+    reserve_rationale: str
 
 
 def plan_event_response(
@@ -185,7 +195,7 @@ def _event_specific_actions(  # noqa: C901, PLR0911
             | EventType.NO_GO
             | EventType.PRIORITY_SHIFT
         ):
-            return ()
+            return _route_control_actions(context)
         case EventType.VEHICLE_LOST:
             return _replacement_actions(context)
         case EventType.RESERVE_DEPLETED:
@@ -199,13 +209,135 @@ def _event_specific_actions(  # noqa: C901, PLR0911
             )
 
 
+def _route_control_actions(context: _ResponseContext) -> tuple[MicroAction, ...]:
+    match context.event.event_type:
+        case EventType.GPS_DROP:
+            return _gps_drop_actions(context)
+        case EventType.SENSOR_FAIL:
+            return _sensor_fail_actions(context)
+        case EventType.NO_GO:
+            return _no_go_actions(context)
+        case EventType.PRIORITY_SHIFT:
+            return _priority_shift_actions(context)
+        case _:
+            return ()
+
+
+def _gps_drop_actions(context: _ResponseContext) -> tuple[MicroAction, ...]:
+    target = _vehicle_by_id(context.stressed.vehicles, context.event.target)
+    actions: list[MicroAction] = []
+    if target is not None and target.status != VehicleStatus.LOST:
+        actions.append(
+            card_action(
+                target.id,
+                MicroActionType.HOLD,
+                None,
+                "hold low-speed mode while GPS-denied support is assigned",
+            ),
+        )
+    support = _support_action_for_capability(
+        context=context,
+        exclude=frozenset({context.event.target}),
+        intent=_SupportActionIntent(
+            capability=CapabilityName.GPS_DENIED_NAV,
+            active_action=MicroActionType.REROUTE,
+            reserve_action=MicroActionType.LAUNCH_RESERVE,
+            active_rationale="reroute GPS-denied navigation support toward the affected area",
+            reserve_rationale="launch GPS-denied reserve to stabilize navigation coverage",
+        ),
+    )
+    if support is not None:
+        actions.append(support)
+    return tuple(actions)
+
+
+def _sensor_fail_actions(context: _ResponseContext) -> tuple[MicroAction, ...]:
+    target = _vehicle_by_id(context.stressed.vehicles, context.event.target)
+    actions: list[MicroAction] = []
+    if target is not None and target.status != VehicleStatus.LOST:
+        actions.append(
+            card_action(
+                target.id,
+                MicroActionType.SWITCH_SENSOR_MODE,
+                context.area,
+                "switch degraded payload to robust sensing mode",
+            ),
+        )
+    replacement = _replacement_actions(context)
+    if len(replacement) > 0:
+        actions.extend(replacement)
+        return tuple(actions)
+    support = _support_action_for_capability(
+        context=context,
+        exclude=frozenset({context.event.target}),
+        intent=_SupportActionIntent(
+            capability=CapabilityName.VISUAL_RECON,
+            active_action=MicroActionType.REASSIGN_ROLE,
+            reserve_action=MicroActionType.REPLACE,
+            active_rationale="shift visual recon asset to backfill failed sensor coverage",
+            reserve_rationale="replace failed sensor coverage from reserve allocation",
+        ),
+    )
+    if support is not None:
+        actions.append(support)
+    return tuple(actions)
+
+
+def _no_go_actions(context: _ResponseContext) -> tuple[MicroAction, ...]:
+    actions = [
+        card_action(
+            "system",
+            MicroActionType.REQUEST_HUMAN_CONFIRM,
+            context.area,
+            "confirm no-go boundary before route reshuffle",
+        ),
+    ]
+    reroute = _best_vehicle_in_area(context=context)
+    if reroute is not None:
+        actions.append(
+            card_action(
+                reroute,
+                MicroActionType.REROUTE,
+                context.area,
+                "reroute active asset through approved corridor around no-go area",
+            ),
+        )
+    return tuple(actions)
+
+
+def _priority_shift_actions(context: _ResponseContext) -> tuple[MicroAction, ...]:
+    capability = _top_area_gap_capability(context) or CapabilityName.VISUAL_RECON
+    support = _support_action_for_capability(
+        context=context,
+        exclude=frozenset(),
+        intent=_SupportActionIntent(
+            capability=capability,
+            active_action=MicroActionType.REASSIGN_ROLE,
+            reserve_action=MicroActionType.LAUNCH_RESERVE,
+            active_rationale=f"surge {capability.value} asset into higher-priority area",
+            reserve_rationale=f"launch reserve to surge {capability.value} capacity",
+        ),
+    )
+    if support is None:
+        return ()
+    return (support,)
+
+
 def _allocation_actions(context: _ResponseContext) -> tuple[MicroAction, ...]:
     actions: list[MicroAction] = []
     for desired in _ranked_desired_assignments(context):
         if len(actions) >= MAX_ACTIONS:
             break
         vehicle = _vehicle_by_id(context.stressed.vehicles, desired.vehicle_id)
-        if vehicle is None or vehicle.status == VehicleStatus.LOST:
+        if (
+            vehicle is None
+            or vehicle.status == VehicleStatus.LOST
+            or not is_battery_viable_replacement(
+                vehicle=vehicle,
+                snapshot=context.stressed,
+                area=desired.area,
+            )
+        ):
             continue
         current = context.current_assignments.get(desired.vehicle_id)
         if current == desired:
@@ -252,10 +384,66 @@ def _best_standby_reserve(context: _ResponseContext) -> Vehicle | None:
         vehicle
         for vehicle in context.stressed.vehicles
         if vehicle.status == VehicleStatus.STANDBY and vehicle.id != context.event.target
+        and is_battery_viable_replacement(
+            vehicle=vehicle,
+            snapshot=context.stressed,
+            area=context.area,
+        )
     ]
     if len(candidates) == 0:
         return None
     return max(candidates, key=lambda vehicle: vehicle.capabilities.reserve)
+
+
+def _support_action_for_capability(
+    context: _ResponseContext,
+    exclude: frozenset[str],
+    intent: _SupportActionIntent,
+) -> MicroAction | None:
+    vehicle = _best_support_vehicle_for_capability(
+        context=context,
+        capability=intent.capability,
+        exclude=exclude,
+    )
+    if vehicle is None:
+        return None
+    if vehicle.status == VehicleStatus.STANDBY or vehicle.area == "GCS":
+        return card_action(
+            vehicle.id,
+            intent.reserve_action,
+            context.area,
+            intent.reserve_rationale,
+        )
+    return card_action(vehicle.id, intent.active_action, context.area, intent.active_rationale)
+
+
+def _best_support_vehicle_for_capability(
+    context: _ResponseContext,
+    capability: CapabilityName,
+    exclude: frozenset[str],
+) -> Vehicle | None:
+    candidates = [
+        vehicle
+        for vehicle in context.stressed.vehicles
+        if vehicle.id not in exclude
+        and vehicle.status != VehicleStatus.LOST
+        and not vehicle.synthetic
+        and is_battery_viable_replacement(
+            vehicle=vehicle,
+            snapshot=context.stressed,
+            area=context.area,
+        )
+    ]
+    if len(candidates) == 0:
+        return None
+    return max(
+        candidates,
+        key=lambda vehicle: (
+            1 if vehicle.status == VehicleStatus.STANDBY or vehicle.area == "GCS" else 0,
+            0 if vehicle.area == context.area else 1,
+            effective_capability(vehicle).value_for(capability),
+        ),
+    )
 
 
 def _dedupe_actions(actions: tuple[MicroAction, ...]) -> tuple[MicroAction, ...]:
@@ -421,6 +609,11 @@ def _best_vehicle_for_capability(
         vehicle
         for vehicle in context.stressed.vehicles
         if vehicle.status != VehicleStatus.LOST and not vehicle.synthetic
+        and is_battery_viable_replacement(
+            vehicle=vehicle,
+            snapshot=context.stressed,
+            area=context.area,
+        )
     ]
     if len(candidates) == 0:
         return None
@@ -431,6 +624,23 @@ def _best_vehicle_for_capability(
             effective_capability(vehicle).value_for(capability),
         ),
     ).id
+
+
+def _top_area_gap_capability(context: _ResponseContext) -> CapabilityName | None:
+    gap = top_gap(
+        tuple(
+            item
+            for item in analyze_capability_gaps(
+                vehicles=context.stressed.vehicles,
+                mission=context.stressed.mission,
+                assignments=context.stressed.assignments,
+            )
+            if item.area == context.area
+        ),
+    )
+    if gap is None:
+        return None
+    return gap.capability
 
 
 def _vehicle_by_id(vehicles: tuple[Vehicle, ...], vehicle_id: str) -> Vehicle | None:
