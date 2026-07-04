@@ -8,6 +8,16 @@ export const CapabilityNames = [
   "reserve",
 ] as const
 
+export const MissionTypes = [
+  "area_recon",
+  "route_recon",
+  "persistent_watch",
+  "perimeter_security",
+  "comm_relay",
+  "gps_denied_scout",
+  "damage_assessment",
+] as const
+
 export const EventTypes = [
   "comm_jam",
   "gps_drop",
@@ -34,6 +44,7 @@ const MicroActionTypes = [
 const Percent = z.number().min(0).max(1)
 const NonNegative = z.number().min(0)
 
+const MissionTypeSchema = z.enum(MissionTypes)
 const CapabilityNameSchema = z.enum(CapabilityNames)
 const EventTypeSchema = z.enum(EventTypes)
 const DecisionActionSchema = z.enum(DecisionActions)
@@ -83,6 +94,7 @@ const CapabilityDemandSchema = z.object({
 
 const MissionSchema = z.object({
   id: z.string(),
+  mission_type: MissionTypeSchema,
   objective: z.string(),
   areas: z.array(z.string()),
   requirements: z.record(z.string(), CapabilityDemandSchema),
@@ -192,6 +204,7 @@ export const ReplayResponseSchema = z.object({
   entries: z.array(BlackBoxEntrySchema),
 })
 
+export type MissionType = z.infer<typeof MissionTypeSchema>
 export type CapabilityName = z.infer<typeof CapabilityNameSchema>
 export type EventType = z.infer<typeof EventTypeSchema>
 export type DecisionAction = z.infer<typeof DecisionActionSchema>

@@ -29,6 +29,7 @@ export function makeDashboardState(): DashboardState {
   return DashboardStateSchema.parse({
     mission: {
       id: "mission-seoul-isr",
+      mission_type: "area_recon",
       objective: "Maintain A/B/C ISR continuity",
       areas: ["A", "B", "C"],
       requirements: {
@@ -49,7 +50,7 @@ export function makeDashboardState(): DashboardState {
     vehicles: [
       {
         id: "UxV-04",
-        type: "UAV",
+        type: "relay_uav",
         label: "Relay reserve",
         area: "B",
         role: "relay",

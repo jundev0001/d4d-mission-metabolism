@@ -11,6 +11,7 @@ from d4d_mission.types import (
     EventType,
     MicroActionType,
     MissionId,
+    MissionType,
     RecommendationId,
     RecommendationStatus,
     VehicleId,
@@ -97,6 +98,7 @@ class MissionConstraints(StrictModel):
 
 class Mission(StrictModel):
     id: MissionId
+    mission_type: MissionType
     objective: str
     areas: tuple[AreaId, ...]
     requirements: dict[AreaId, CapabilityDemand]
@@ -111,6 +113,25 @@ class Assignment(StrictModel):
     area: AreaId
     role: CapabilityName
     weight: float = Field(default=1, ge=0, le=1)
+
+
+class MissionTemplate(StrictModel):
+    mission_type: MissionType
+    label: str
+    description: str
+    demand: CapabilityDemand
+    priority_capabilities: tuple[CapabilityName, ...]
+
+
+class VehicleTypeProfile(StrictModel):
+    vehicle_type: VehicleType
+    label: str
+    platform: str
+    primary_role: CapabilityName
+    capabilities: CapabilityVector
+    endurance: float = Field(ge=0, le=1)
+    speed: float = Field(ge=0, le=1)
+    terrain_notes: tuple[str, ...]
 
 
 class EventRequest(StrictModel):
@@ -202,6 +223,14 @@ class AllocationResponse(StrictModel):
 
 class ReplayResponse(StrictModel):
     entries: tuple[BlackBoxEntry, ...]
+
+
+class MissionCatalogResponse(StrictModel):
+    templates: tuple[MissionTemplate, ...]
+
+
+class VehicleTypeCatalogResponse(StrictModel):
+    profiles: tuple[VehicleTypeProfile, ...]
 
 
 class DashboardState(StrictModel):

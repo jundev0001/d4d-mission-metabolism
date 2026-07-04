@@ -1,10 +1,31 @@
 from d4d_mission.capability import compute_capability_report
+from d4d_mission.catalog import mission_templates, vehicle_type_profiles
 from d4d_mission.immune import decide_recommendation
 from d4d_mission.immune_cards import build_recommendation
-from d4d_mission.metabolism import evaluate_metrics
+from d4d_mission.metabolism import _relay_redundancy, evaluate_metrics
 from d4d_mission.models import DecisionRequest, EventRequest
 from d4d_mission.scenario import apply_event_to_snapshot, create_initial_snapshot
-from d4d_mission.types import DecisionAction, EventType
+from d4d_mission.types import DEPLOYABLE_VEHICLE_TYPES, MISSION_TYPES, DecisionAction, EventType
+
+
+def test_catalog_contains_mission_and_vehicle_type_vectors() -> None:
+    missions = mission_templates()
+    vehicles = vehicle_type_profiles()
+
+    assert tuple(template.mission_type for template in missions) == MISSION_TYPES
+    assert tuple(profile.vehicle_type for profile in vehicles) == DEPLOYABLE_VEHICLE_TYPES
+    assert len(missions) == 7
+    assert len(vehicles) == 8
+    assert all(template.demand.visual_recon >= 0 for template in missions)
+    assert all(profile.capabilities.reserve >= 0 for profile in vehicles)
+
+
+def test_default_scenario_uses_new_catalog_types() -> None:
+    snapshot = create_initial_snapshot(seed=5)
+    vehicle_types = {vehicle.type for vehicle in snapshot.vehicles if not vehicle.synthetic}
+
+    assert snapshot.mission.mission_type == MISSION_TYPES[0]
+    assert vehicle_types.issubset(set(DEPLOYABLE_VEHICLE_TYPES))
 
 
 def test_capability_availability_decreases_when_health_degrades() -> None:
@@ -41,6 +62,15 @@ def test_mcc_caps_at_one_and_reports_deficits() -> None:
     assert report.overall_mcc <= 1
     assert report.area_reports["B"].coverage["relay"] <= 1
     assert report.area_reports["B"].deficit["relay"] == 0
+
+
+def test_relay_redundancy_penalizes_ew_pressure_outside_b_area() -> None:
+    snapshot = create_initial_snapshot(seed=11)
+    initial = _relay_redundancy(snapshot)
+    mission = snapshot.mission.model_copy(update={"area_threats": {"A": 0.08, "B": 0.12, "C": 1.0}})
+    stressed = snapshot.model_copy(update={"mission": mission})
+
+    assert _relay_redundancy(stressed) < initial
 
 
 def test_event_recommendation_and_approval_recover_collapse_and_debt() -> None:
