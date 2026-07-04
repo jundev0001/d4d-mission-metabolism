@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest"
 import { areaPath, parseCustomScenarioText, serializeCustomScenario } from "../src/customScenario"
 import { customScenarioEventBatches, orderedCustomEvents } from "../src/customScenarioGraph"
 import {
+  addMapArea,
   addParallelScenarioNode,
+  removeMapArea,
   removeScenarioEdge,
   removeScenarioNode,
   upsertScenarioEdge,
@@ -48,9 +50,12 @@ describe("custom scenario document", () => {
       severity: 0.7,
     })
     const changedMap = withMapArea(changedNode, "B", {
-      center: { x: 58, y: 42 },
-      size: { width: 50, height: 30 },
-      skew: 4,
+      points: [
+        { x: 44, y: 24 },
+        { x: 84, y: 26 },
+        { x: 80, y: 58 },
+        { x: 40, y: 56 },
+      ],
     })
     const imported = parseCustomScenarioText(serializeCustomScenario(changedMap))
 
@@ -64,6 +69,24 @@ describe("custom scenario document", () => {
     if (area !== undefined) {
       expect(areaPath(area)).toContain("M")
     }
+  })
+
+  it("Given drawn areas When adding and removing a map area Then event targets stay valid", () => {
+    const added = addMapArea(DEFAULT_CUSTOM_SCENARIO, [
+      { x: 10, y: 10 },
+      { x: 30, y: 12 },
+      { x: 28, y: 30 },
+      { x: 12, y: 28 },
+    ])
+    const withEvent = withScenarioNodeEvent(added.document, "node-comm-jam", {
+      target: added.selectedAreaId,
+    })
+    const removed = removeMapArea(withEvent, added.selectedAreaId)
+    const imported = parseCustomScenarioText(serializeCustomScenario(removed.document))
+
+    expect(added.document.map.areas).toHaveLength(4)
+    expect(imported.map.areas.some((area) => area.id === added.selectedAreaId)).toBe(false)
+    expect(imported.scenario.nodes[0]?.event.target).toBe(imported.map.areas[0]?.id)
   })
 
   it("Given a selected branch node When adding a parallel event Then it shares the same parent", () => {

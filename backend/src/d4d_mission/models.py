@@ -106,6 +106,8 @@ class Mission(StrictModel):
     autonomy_level: float = Field(default=0.62, ge=0, le=1)
     area_threats: dict[AreaId, float] = Field(default_factory=dict)
     area_priorities: dict[AreaId, float] = Field(default_factory=dict)
+    area_centers: dict[AreaId, Point] = Field(default_factory=dict)
+    area_mission_types: dict[AreaId, MissionType] = Field(default_factory=dict)
     no_go_areas: tuple[AreaId, ...] = ()
 
 

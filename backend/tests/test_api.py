@@ -155,6 +155,65 @@ def test_api_allocate_applies_and_explains() -> None:
     )
 
 
+def test_api_configures_custom_areas_before_allocation() -> None:
+    client = TestClient(create_app())
+
+    configured = client.post(
+        "/mission/configure",
+        json={
+            "objective": "Custom drawn areas",
+            "mission_type": "area_recon",
+            "areas": [
+                {
+                    "id": "alpha",
+                    "label": "Alpha",
+                    "mission_type": "area_recon",
+                    "requirements": {
+                        "visual_recon": 1.0,
+                        "relay": 0.2,
+                        "overwatch": 0.3,
+                        "gps_denied_nav": 0.1,
+                        "reserve": 0.1,
+                    },
+                    "priority": 0.9,
+                    "threat": 0.12,
+                    "center": {"x": 18, "y": 24},
+                },
+                {
+                    "id": "bravo",
+                    "label": "Bravo",
+                    "mission_type": "comm_relay",
+                    "requirements": {
+                        "visual_recon": 0.2,
+                        "relay": 1.0,
+                        "overwatch": 0.2,
+                        "gps_denied_nav": 0.1,
+                        "reserve": 0.2,
+                    },
+                    "priority": 0.7,
+                    "threat": 0.08,
+                    "center": {"x": 76, "y": 36},
+                },
+            ],
+        },
+    )
+
+    assert configured.status_code == 200
+    payload = configured.json()
+    assert payload["mission"]["areas"] == ["alpha", "bravo"]
+    assert payload["mission"]["area_centers"]["alpha"] == {"x": 18.0, "y": 24.0}
+    assert payload["mission"]["area_mission_types"]["bravo"] == "comm_relay"
+    assert payload["assignments"] == []
+    assert {vehicle["area"] for vehicle in payload["vehicles"]} == {"GCS"}
+
+    allocation = client.post("/allocate")
+
+    assert allocation.status_code == 200
+    assigned_areas = {assignment["area"] for assignment in allocation.json()["assignments"]}
+    assert len(assigned_areas) > 0
+    assert assigned_areas <= {"alpha", "bravo"}
+
+
 def test_api_rejects_empty_deployment() -> None:
     client = TestClient(create_app())
 

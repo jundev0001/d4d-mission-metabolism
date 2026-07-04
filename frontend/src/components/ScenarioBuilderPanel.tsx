@@ -1,7 +1,8 @@
-import { Download, Play, Upload } from "lucide-react"
+import { CheckCircle2, Download, Play, Route, Upload } from "lucide-react"
 import { type ChangeEvent, useRef, useState } from "react"
 import {
   type CustomMapArea,
+  type CustomPoint,
   type CustomScenarioDocument,
   type CustomScenarioEdge,
   type CustomScenarioNode,
@@ -10,9 +11,11 @@ import {
   serializeCustomScenario,
 } from "../customScenario"
 import {
+  addMapArea,
   addParallelScenarioNode,
   addScenarioNode,
   insertScenarioNodeAfter,
+  removeMapArea,
   removeScenarioEdge,
   removeScenarioNode,
   setScenarioEntryNode,
@@ -30,11 +33,14 @@ import { ScenarioGraphEditor } from "./ScenarioGraphEditor"
 
 export function ScenarioBuilderPanel() {
   const scenario = useMissionStore((state) => state.customScenario)
+  const dashboard = useMissionStore((state) => state.dashboard)
+  const allocateMission = useMissionStore((state) => state.allocateMission)
+  const configureCustomMission = useMissionStore((state) => state.configureCustomMission)
   const setCustomScenario = useMissionStore((state) => state.setCustomScenario)
   const runCustomScenario = useMissionStore((state) => state.runCustomScenario)
   const isRunningDemo = useMissionStore((state) => state.isRunningDemo)
   const [selectedNodeId, setSelectedNodeId] = useState(scenario.scenario.entry_node_id)
-  const [selectedAreaId, setSelectedAreaId] = useState("A")
+  const [selectedAreaId, setSelectedAreaId] = useState(scenario.map.areas.at(0)?.id ?? "")
   const [importError, setImportError] = useState<string | null>(null)
   const [flowNotice, setFlowNotice] = useState<string | null>(null)
   const [connectFromNodeId, setConnectFromNodeId] = useState<string | null>(null)
@@ -44,6 +50,13 @@ export function ScenarioBuilderPanel() {
     scenario.scenario.nodes.at(0)
   const selectedArea =
     scenario.map.areas.find((area) => area.id === selectedAreaId) ?? scenario.map.areas.at(0)
+  const targetOptions = [
+    ...new Set([
+      ...scenario.map.areas.map((area) => area.id),
+      ...(dashboard?.vehicles.map((vehicle) => vehicle.id) ?? []),
+      "operator",
+    ]),
+  ]
 
   if (selectedNode === undefined || selectedArea === undefined) {
     return null
@@ -62,6 +75,18 @@ export function ScenarioBuilderPanel() {
 
   function updateSelectedArea(patch: Partial<Omit<CustomMapArea, "id">>): void {
     updateScenario(withMapArea(scenario, activeArea.id, patch))
+  }
+
+  function handleAddArea(points: readonly CustomPoint[]): void {
+    const result = addMapArea(scenario, points)
+    setSelectedAreaId(result.selectedAreaId)
+    updateScenario(result.document)
+  }
+
+  function handleRemoveArea(): void {
+    const result = removeMapArea(scenario, activeArea.id)
+    setSelectedAreaId(result.selectedAreaId)
+    updateScenario(result.document)
   }
 
   function handleExport(): void {
@@ -97,7 +122,7 @@ export function ScenarioBuilderPanel() {
   function handleAddEdge(edge: CustomScenarioEdge): void {
     const next = upsertScenarioEdge(scenario, edge)
     if (next === scenario) {
-      setFlowNotice("연결 실패: 이미 연결됐거나 순환 연결입니다.")
+      setFlowNotice("Connection rejected: duplicate or cyclic edge")
       return
     }
     updateScenario(next)
@@ -125,7 +150,7 @@ export function ScenarioBuilderPanel() {
       const imported = parseCustomScenarioText(await file.text())
       setImportError(null)
       setSelectedNodeId(imported.scenario.entry_node_id)
-      setSelectedAreaId(imported.map.areas.at(0)?.id ?? "A")
+      setSelectedAreaId(imported.map.areas.at(0)?.id ?? "")
       updateScenario(imported)
     } catch (error) {
       if (error instanceof Error) {
@@ -137,19 +162,37 @@ export function ScenarioBuilderPanel() {
   }
 
   return (
-    <section className="panel scenario-builder-panel" aria-label="커스텀 시나리오 빌더">
+    <section className="panel scenario-builder-panel" aria-label="Custom scenario builder">
       <div className="panel-title">
-        <span>커스텀 시나리오 빌더</span>
+        <span>Custom scenario builder</span>
         <span className="caption">No-code JSON</span>
       </div>
       <div className="builder-command-row">
         <button className="button" type="button" onClick={handleExport}>
           <Download size={15} />
-          내보내기
+          Export
         </button>
         <button className="button" type="button" onClick={() => fileInputRef.current?.click()}>
           <Upload size={15} />
-          가져오기
+          Import
+        </button>
+        <button
+          className="button"
+          type="button"
+          disabled={isRunningDemo}
+          onClick={() => void configureCustomMission()}
+        >
+          <CheckCircle2 size={15} />
+          Apply mission
+        </button>
+        <button
+          className="button"
+          type="button"
+          disabled={isRunningDemo}
+          onClick={() => void allocateMission()}
+        >
+          <Route size={15} />
+          Allocate
         </button>
         <button
           className="button primary"
@@ -158,7 +201,7 @@ export function ScenarioBuilderPanel() {
           onClick={() => void runCustomScenario()}
         >
           <Play size={15} />
-          테스트
+          Run flow
         </button>
         <input
           ref={fileInputRef}
@@ -170,21 +213,21 @@ export function ScenarioBuilderPanel() {
       </div>
       {importError || flowNotice ? (
         <div className="builder-message-row">
-          {importError ? <p className="builder-error">가져오기 실패: {importError}</p> : null}
+          {importError ? <p className="builder-error">Import failed: {importError}</p> : null}
           {flowNotice ? <p className="builder-error">{flowNotice}</p> : null}
         </div>
       ) : null}
 
       <div className="builder-meta-grid">
         <label className="builder-field">
-          <span>맵 이름</span>
+          <span>Map</span>
           <input
             value={scenario.map.name}
             onChange={(event) => updateScenario(withMapName(scenario, event.currentTarget.value))}
           />
         </label>
         <label className="builder-field">
-          <span>시나리오 이름</span>
+          <span>Scenario</span>
           <input
             value={scenario.scenario.name}
             onChange={(event) =>
@@ -207,7 +250,11 @@ export function ScenarioBuilderPanel() {
       />
 
       <div className="builder-side-stack">
-        <ScenarioNodeEditor node={activeNode} onChange={updateSelectedNode} />
+        <ScenarioNodeEditor
+          node={activeNode}
+          targetOptions={targetOptions}
+          onChange={updateSelectedNode}
+        />
         <ScenarioGraphEditor
           connectFromNodeId={connectFromNodeId}
           document={scenario}
@@ -225,11 +272,13 @@ export function ScenarioBuilderPanel() {
         <ScenarioMapEditor
           areas={scenario.map.areas}
           selectedArea={activeArea}
-          onSelectArea={setSelectedAreaId}
+          onAddArea={handleAddArea}
           onChange={updateSelectedArea}
+          onDeleteArea={handleRemoveArea}
+          onSelectArea={setSelectedAreaId}
         />
         <p className="builder-hint">
-          노드 {scenario.scenario.nodes.length}/{MAX_SCENARIO_NODES} · 연결{" "}
+          Nodes {scenario.scenario.nodes.length}/{MAX_SCENARIO_NODES} | Links{" "}
           {scenario.scenario.edges.length}
         </p>
       </div>

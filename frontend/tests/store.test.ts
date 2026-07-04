@@ -3,6 +3,8 @@ import { useMissionStore } from "../src/store"
 import { makeDashboardState } from "./fixtures"
 
 const apiMocks = vi.hoisted(() => ({
+  allocateMission: vi.fn(),
+  configureMission: vi.fn(),
   deployFleet: vi.fn(),
   fetchDashboardState: vi.fn(),
   fetchReplay: vi.fn(),
@@ -14,6 +16,8 @@ const apiMocks = vi.hoisted(() => ({
 }))
 
 vi.mock("../src/api", () => ({
+  allocateMission: apiMocks.allocateMission,
+  configureMission: apiMocks.configureMission,
   deployFleet: apiMocks.deployFleet,
   fetchDashboardState: apiMocks.fetchDashboardState,
   fetchReplay: apiMocks.fetchReplay,

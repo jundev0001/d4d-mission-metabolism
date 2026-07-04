@@ -4,6 +4,16 @@
   margin-top: var(--space-3);
 }
 
+.event-form {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.event-form .button {
+  width: 100%;
+}
+
 .event-button {
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr);

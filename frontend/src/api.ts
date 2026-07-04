@@ -1,9 +1,12 @@
 import ky from "ky"
 import {
+  type CapabilityDemand,
   type DashboardState,
   DashboardStateSchema,
   type DecisionPayload,
   type EventPayload,
+  type MissionType,
+  type Point,
   type ReplayResponse,
   ReplayResponseSchema,
 } from "./types"
@@ -25,6 +28,20 @@ const client = ky.create({
   },
 })
 
+export type MissionConfigurePayload = {
+  readonly objective: string
+  readonly mission_type: MissionType
+  readonly areas: readonly {
+    readonly id: string
+    readonly label: string
+    readonly mission_type: MissionType
+    readonly requirements: CapabilityDemand
+    readonly priority: number
+    readonly threat: number
+    readonly center: Point
+  }[]
+}
+
 export async function fetchDashboardState(): Promise<DashboardState> {
   const payload = await client.get("").json()
   return DashboardStateSchema.parse(payload)
@@ -43,6 +60,16 @@ export async function fetchVehicleTypes(): Promise<VehicleTypeCatalogResponse> {
 export async function deployFleet(items: FleetDeploymentPayload): Promise<DashboardState> {
   const payload = await client.post("fleet/deploy", { json: { items } }).json()
   return DashboardStateSchema.parse(payload)
+}
+
+export async function configureMission(payload: MissionConfigurePayload): Promise<DashboardState> {
+  const response = await client.post("mission/configure", { json: payload }).json()
+  return DashboardStateSchema.parse(response)
+}
+
+export async function allocateMission(): Promise<DashboardState> {
+  await client.post("allocate").json()
+  return fetchDashboardState()
 }
 
 export async function injectEvent(event: EventPayload): Promise<DashboardState> {

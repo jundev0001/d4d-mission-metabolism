@@ -99,6 +99,7 @@ def plan_allocation(vehicles: tuple[Vehicle, ...], mission: Mission) -> Allocati
 def apply_allocation_to_vehicles(
     vehicles: tuple[Vehicle, ...],
     assignments: tuple[Assignment, ...],
+    mission: Mission | None = None,
 ) -> tuple[Vehicle, ...]:
     assignments_by_vehicle = {assignment.vehicle_id: assignment for assignment in assignments}
     area_slots: dict[str, int] = {}
@@ -114,7 +115,11 @@ def apply_allocation_to_vehicles(
                     update={
                         "area": GCS_AREA,
                         "status": VehicleStatus.STANDBY,
-                        "position": _staging_position(area=GCS_AREA, slot=len(updated)),
+                        "position": _staging_position(
+                            area=GCS_AREA,
+                            slot=len(updated),
+                            mission=mission,
+                        ),
                     },
                 ),
             )
@@ -127,7 +132,11 @@ def apply_allocation_to_vehicles(
                     "area": assignment.area,
                     "role": assignment.role,
                     "status": VehicleStatus.ACTIVE,
-                    "position": _staging_position(area=assignment.area, slot=slot),
+                    "position": _staging_position(
+                        area=assignment.area,
+                        slot=slot,
+                        mission=mission,
+                    ),
                 },
             ),
         )
@@ -227,7 +236,7 @@ def _candidate_for_area(
         key=lambda cap: _coverage(effective, weight, remaining, area, cap),
     )
     priority = _area_urgency(mission=mission, area=area)
-    movement_cost = _movement_cost(vehicle=vehicle, area=area)
+    movement_cost = _movement_cost(vehicle=vehicle, area=area, mission=mission)
     battery_margin = _battery_margin(vehicle=vehicle, area=area, mission=mission)
     utility = _candidate_utility(
         vehicle=vehicle,
@@ -345,15 +354,21 @@ def _area_urgency(mission: Mission, area: str) -> float:
     return 1.0 + priority + (threat * 0.25)
 
 
-def _movement_cost(vehicle: Vehicle, area: str) -> float:
+def _movement_cost(vehicle: Vehicle, area: str, mission: Mission) -> float:
     mobility = _vehicle_mobility(vehicle.type)
-    distance = _distance(vehicle.position, _staging_position(area=area, slot=0)) / 100
+    distance = _distance(
+        vehicle.position,
+        _staging_position(area=area, slot=0, mission=mission),
+    ) / 100
     return (distance / max(mobility.speed, 0.12)) * MOVEMENT_COST_WEIGHT
 
 
 def _battery_margin(vehicle: Vehicle, area: str, mission: Mission) -> float:
     mobility = _vehicle_mobility(vehicle.type)
-    distance = _distance(vehicle.position, _staging_position(area=area, slot=0)) / 100
+    distance = _distance(
+        vehicle.position,
+        _staging_position(area=area, slot=0, mission=mission),
+    ) / 100
     reserve_floor = mission.constraints.return_battery_threshold
     travel_budget = distance * (0.32 / max(mobility.endurance, 0.25))
     required = reserve_floor + travel_budget
@@ -405,8 +420,16 @@ def _distance(origin: Point, target: Point) -> float:
     return math.hypot(origin.x - target.x, origin.y - target.y)
 
 
-def _staging_position(area: str, slot: int) -> Point:
-    anchor = AREA_STAGING_POINTS.get(area, GCS_POINT)
+def _staging_position(area: str, slot: int, mission: Mission | None = None) -> Point:
+    anchor = _area_anchor(area=area, mission=mission)
     column = slot % 4
     row = slot // 4
     return Point(x=anchor.x - 5.1 + (column * 3.4), y=anchor.y + 3.2 + (row * 3.1))
+
+
+def _area_anchor(area: str, mission: Mission | None) -> Point:
+    if area == GCS_AREA:
+        return GCS_POINT
+    if mission is not None and area in mission.area_centers:
+        return mission.area_centers[area]
+    return AREA_STAGING_POINTS.get(area, GCS_POINT)

@@ -26,6 +26,7 @@ from d4d_mission.models import (
     EventRequest,
     FleetStateResponse,
     MetricSnapshot,
+    Mission,
     RecommendationCard,
     ReplayResponse,
 )
@@ -102,6 +103,32 @@ class MissionRuntime:
         )
         return self._snapshot
 
+    def configure_mission(self, mission: Mission) -> DashboardState:
+        staged_vehicles = apply_allocation_to_vehicles(
+            vehicles=self._snapshot.vehicles,
+            assignments=(),
+            mission=mission,
+        )
+        self._snapshot = refresh_snapshot(
+            snapshot=self._snapshot.model_copy(
+                update={
+                    "mission": mission,
+                    "vehicles": staged_vehicles,
+                    "assignments": (),
+                    "recommendations": (),
+                    "events": (),
+                    "scenario_time": 0,
+                },
+            ),
+        )
+        self._blackbox.record_model(
+            scenario_time=self._snapshot.scenario_time,
+            kind="mission",
+            summary="mission configured from custom areas",
+            model=mission,
+        )
+        return self._snapshot
+
     def fleet_state(self) -> FleetStateResponse:
         return FleetStateResponse(vehicles=self._snapshot.vehicles)
 
@@ -122,6 +149,7 @@ class MissionRuntime:
         vehicles = apply_allocation_to_vehicles(
             vehicles=self._snapshot.vehicles,
             assignments=plan.assignments,
+            mission=self._snapshot.mission,
         )
         self._snapshot = refresh_snapshot(
             snapshot=self._snapshot.model_copy(

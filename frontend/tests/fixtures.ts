@@ -45,6 +45,13 @@ export function makeDashboardState(): DashboardState {
       },
       autonomy_level: 0.62,
       area_threats: { A: 0.1, B: 0.1, C: 0.1 },
+      area_priorities: { A: 0.7, B: 1, C: 0.6 },
+      area_centers: { A: { x: 25, y: 30 }, B: { x: 63, y: 39 }, C: { x: 52, y: 67 } },
+      area_mission_types: {
+        A: "area_recon",
+        B: "comm_relay",
+        C: "persistent_watch",
+      },
       no_go_areas: [],
     },
     vehicles: [

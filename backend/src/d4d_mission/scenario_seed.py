@@ -54,6 +54,12 @@ def default_mission() -> Mission:
         constraints=MissionConstraints(),
         area_threats={"A": 0.08, "B": 0.12, "C": 0.06},
         area_priorities={"A": 0.72, "B": 1.0, "C": 0.58},
+        area_centers={"A": Point(x=25, y=30), "B": Point(x=63, y=39), "C": Point(x=52, y=67)},
+        area_mission_types={
+            "A": MissionType.AREA_RECON,
+            "B": MissionType.COMM_RELAY,
+            "C": MissionType.PERSISTENT_WATCH,
+        },
     )
 
 

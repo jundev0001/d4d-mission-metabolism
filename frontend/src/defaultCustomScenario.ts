@@ -1,44 +1,73 @@
-import { type CustomScenarioDocument, CustomScenarioDocumentSchema } from "./customScenario"
+import {
+  type CustomScenarioDocument,
+  CustomScenarioDocumentSchema,
+  requirementsForMissionType,
+} from "./customScenario"
 
 export const DEFAULT_CUSTOM_SCENARIO: CustomScenarioDocument = CustomScenarioDocumentSchema.parse({
   version: 1,
   map: {
-    name: "A/B/C ISR 복원 맵",
+    name: "Custom ISR map",
     areas: [
       {
         id: "A",
-        label: "구역 A",
-        center: { x: 25, y: 30 },
-        size: { width: 34, height: 30 },
-        skew: 5,
+        label: "Area A",
+        points: [
+          { x: 13, y: 15 },
+          { x: 47, y: 15 },
+          { x: 37, y: 45 },
+          { x: 3, y: 45 },
+        ],
         label_position: { x: 16, y: 21 },
         metric_position: { x: 16, y: 27 },
         threat_position: { x: 26, y: 30 },
+        mission_type: "area_recon",
+        priority: 0.72,
+        threat: 0.08,
+        requirements: requirementsForMissionType("area_recon"),
       },
       {
         id: "B",
-        label: "구역 B",
-        center: { x: 63, y: 39 },
-        size: { width: 43, height: 34 },
-        skew: 8,
+        label: "Area B",
+        points: [
+          { x: 50, y: 22 },
+          { x: 92, y: 22 },
+          { x: 77, y: 56 },
+          { x: 34, y: 56 },
+        ],
         label_position: { x: 52, y: 30 },
         metric_position: { x: 52, y: 36 },
         threat_position: { x: 64, y: 39 },
+        mission_type: "comm_relay",
+        priority: 1,
+        threat: 0.12,
+        requirements: {
+          ...requirementsForMissionType("comm_relay"),
+          visual_recon: 1.2,
+          overwatch: 0.8,
+        },
       },
       {
         id: "C",
-        label: "구역 C",
-        center: { x: 52, y: 67 },
-        size: { width: 64, height: 25 },
-        skew: -5,
+        label: "Area C",
+        points: [
+          { x: 15, y: 55 },
+          { x: 79, y: 55 },
+          { x: 89, y: 80 },
+          { x: 25, y: 80 },
+        ],
         label_position: { x: 63, y: 70 },
         metric_position: { x: 63, y: 76 },
         threat_position: { x: 65, y: 67 },
+        mission_type: "persistent_watch",
+        priority: 0.58,
+        threat: 0.06,
+        requirements: requirementsForMissionType("persistent_watch"),
       },
     ],
   },
   scenario: {
-    name: "전자전-배터리 회복 테스트",
+    name: "Custom event flow",
     entry_node_id: "node-comm-jam",
     nodes: [
       {

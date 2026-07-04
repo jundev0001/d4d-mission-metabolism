@@ -14,6 +14,7 @@ type MapAreaLabelProps = {
 
 export function MapAreaSector(props: MapAreaSectorProps) {
   const path = areaPath(props.area)
+  const areaClassName = props.area.id.toLowerCase().replace(/[^a-z0-9_-]/g, "-")
   const coverageTone =
     props.minimumCoverage >= 0.8
       ? "healthy"
@@ -21,7 +22,7 @@ export function MapAreaSector(props: MapAreaSectorProps) {
         ? "strained"
         : "deficit"
   return (
-    <g className={`sector sector-${props.area.id.toLowerCase()} ${coverageTone}`}>
+    <g className={`sector sector-${areaClassName} ${coverageTone}`}>
       <path className="sector-fill" d={path} />
       <path className="sector-outline" d={path} />
       {props.noGo ? <path className="no-go-area" d={path} /> : null}
