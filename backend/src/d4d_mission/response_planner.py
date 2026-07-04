@@ -39,11 +39,7 @@ REALLOCATION_EVENTS: Final = frozenset(
         EventType.PRIORITY_SHIFT,
         EventType.DATA_STALE,
         EventType.TARGET_DETECTED,
-        EventType.MOBILITY_BLOCKED,
         EventType.WEATHER_DEGRADED,
-        EventType.COLLISION_RISK,
-        EventType.SENSOR_CONFIDENCE_DROP,
-        EventType.ASSET_ADDED,
         EventType.RESERVE_DEPLETED,
     },
 )
@@ -112,7 +108,7 @@ def _stressed_snapshot(snapshot: DashboardState, event: EventRequest) -> Dashboa
     return refresh_snapshot(snapshot=updated)
 
 
-def _event_specific_actions(  # noqa: C901, PLR0911, PLR0912
+def _event_specific_actions(  # noqa: C901, PLR0911
     context: _ResponseContext,
 ) -> tuple[MicroAction, ...]:
     event = context.event
@@ -159,34 +155,6 @@ def _event_specific_actions(  # noqa: C901, PLR0911, PLR0912
                 ),
                 *handoff,
             )
-        case EventType.MOBILITY_BLOCKED:
-            return (
-                card_action(event.target, MicroActionType.REROUTE, None, "avoid blocked terrain"),
-                card_action(
-                    event.target,
-                    MicroActionType.SYNC_DATA,
-                    None,
-                    "publish mobility obstacle to the shared map",
-                ),
-            )
-        case EventType.COLLISION_RISK:
-            return (
-                card_action(
-                    event.target,
-                    MicroActionType.DECONFLICT_PATHS,
-                    None,
-                    "separate route timing before continuing",
-                ),
-            )
-        case EventType.SENSOR_CONFIDENCE_DROP:
-            return (
-                card_action(
-                    event.target,
-                    MicroActionType.SWITCH_SENSOR_MODE,
-                    None,
-                    "raise confidence on the degraded sensor track",
-                ),
-            )
         case EventType.WEATHER_DEGRADED:
             target = _best_vehicle_for_capability(context, CapabilityName.VISUAL_RECON)
             if target is None:
@@ -216,7 +184,6 @@ def _event_specific_actions(  # noqa: C901, PLR0911, PLR0912
             | EventType.SENSOR_FAIL
             | EventType.NO_GO
             | EventType.PRIORITY_SHIFT
-            | EventType.ASSET_ADDED
         ):
             return ()
         case EventType.VEHICLE_LOST:
@@ -230,8 +197,6 @@ def _event_specific_actions(  # noqa: C901, PLR0911, PLR0912
                     "trim low-priority cells if reserve margin cannot absorb the event",
                 ),
             )
-        case EventType.ALERT_FLOOD:
-            return ()
 
 
 def _allocation_actions(context: _ResponseContext) -> tuple[MicroAction, ...]:

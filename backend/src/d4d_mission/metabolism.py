@@ -4,6 +4,7 @@ import math
 from dataclasses import dataclass
 
 from d4d_mission.capability import clamp01, compute_capability_report, effective_capability
+from d4d_mission.decay import HORIZON_STEPS, project_vehicle
 from d4d_mission.models import DashboardState, MetricSnapshot, Vehicle
 from d4d_mission.types import VehicleStatus
 
@@ -20,19 +21,29 @@ class RelayAreaStatus:
     single_point_risk: bool
 
 
-def evaluate_metrics(snapshot: DashboardState, pending_cards: int) -> MetricSnapshot:
+def evaluate_metrics(
+    snapshot: DashboardState,
+    pending_cards: int,
+    horizon: int = HORIZON_STEPS,
+) -> MetricSnapshot:
     report = compute_capability_report(
         vehicles=snapshot.vehicles,
         mission=snapshot.mission,
         assignments=snapshot.assignments,
     )
+    horizon_snapshot = _projected_operating_snapshot(snapshot=snapshot, horizon=horizon)
+    horizon_report = compute_capability_report(
+        vehicles=horizon_snapshot.vehicles,
+        mission=horizon_snapshot.mission,
+        assignments=horizon_snapshot.assignments,
+    )
     ew_pressure = max(snapshot.mission.area_threats.values(), default=0.0)
-    comm_saturation = _average_comm_loss(snapshot)
-    attrition_risk = _attrition_risk(snapshot)
-    redundancy = _relay_redundancy(snapshot)
+    comm_saturation = _average_comm_loss(horizon_snapshot)
+    attrition_risk = _attrition_risk(horizon_snapshot)
+    redundancy = _relay_redundancy(horizon_snapshot)
     operator_load = clamp01((pending_cards * 0.12) + (len(snapshot.events) * 0.035))
     strain = clamp01(
-        (report.deficit_score * 1.15)
+        (horizon_report.deficit_score * 1.15)
         + (ew_pressure * 0.2)
         + (comm_saturation * 0.14)
         + (operator_load * 0.16)
@@ -44,7 +55,7 @@ def evaluate_metrics(snapshot: DashboardState, pending_cards: int) -> MetricSnap
         snapshot=snapshot,
         pending_cards=pending_cards,
         deficit=report.deficit_score,
-        attrition_risk=attrition_risk,
+        attrition_risk=_attrition_risk(snapshot),
     )
     assisted_actions = max(1, snapshot.assisted_operator_actions)
     human_intents = max(1, snapshot.human_intents)
@@ -59,6 +70,43 @@ def evaluate_metrics(snapshot: DashboardState, pending_cards: int) -> MetricSnap
         replan_time_seconds=round(snapshot.metrics.replan_time_seconds, 1),
         ccr_external=round(snapshot.baseline_operator_actions / assisted_actions, 2),
         ccr_internal=round(snapshot.system_micro_actions / human_intents, 2),
+    )
+
+
+def _projected_operating_snapshot(snapshot: DashboardState, horizon: int) -> DashboardState:
+    if horizon <= 0:
+        return snapshot
+    assignment_areas = {
+        assignment.vehicle_id: assignment.area for assignment in snapshot.assignments
+    }
+    projected = tuple(
+        _project_operating_vehicle(
+            vehicle=vehicle,
+            snapshot=snapshot,
+            area=assignment_areas.get(vehicle.id),
+            horizon=horizon,
+        )
+        for vehicle in snapshot.vehicles
+    )
+    return snapshot.model_copy(update={"vehicles": projected})
+
+
+def _project_operating_vehicle(
+    vehicle: Vehicle,
+    snapshot: DashboardState,
+    area: str | None,
+    horizon: int,
+) -> Vehicle:
+    operating_area = area
+    if operating_area is None and vehicle.status == VehicleStatus.ACTIVE:
+        operating_area = vehicle.area
+    if operating_area not in snapshot.mission.areas:
+        return vehicle
+    return project_vehicle(
+        vehicle=vehicle,
+        mission=snapshot.mission,
+        area=operating_area,
+        steps=horizon,
     )
 
 

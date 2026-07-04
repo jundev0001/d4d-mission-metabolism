@@ -32,7 +32,8 @@ from d4d_mission.models import (
     StrictModel,
     VehicleTypeCatalogResponse,
 )
-from d4d_mission.state import MissionRuntime, UnknownTargetError, runtime_error_to_status
+from d4d_mission.runtime_support import UnknownTargetError
+from d4d_mission.state import MissionRuntime, runtime_error_to_status
 from d4d_mission.types import (
     MissionType,
     VehicleStatus,

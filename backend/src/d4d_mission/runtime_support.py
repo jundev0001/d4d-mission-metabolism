@@ -19,7 +19,6 @@ AREA_TARGET_EVENTS = frozenset(
         EventType.DATA_STALE,
         EventType.TARGET_DETECTED,
         EventType.WEATHER_DEGRADED,
-        EventType.ASSET_ADDED,
         EventType.RESERVE_DEPLETED,
     },
 )
@@ -30,9 +29,6 @@ VEHICLE_TARGET_EVENTS = frozenset(
         EventType.GPS_DROP,
         EventType.SENSOR_FAIL,
         EventType.VEHICLE_LOST,
-        EventType.MOBILITY_BLOCKED,
-        EventType.COLLISION_RISK,
-        EventType.SENSOR_CONFIDENCE_DROP,
     },
 )
 

@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from d4d_mission.types import VehicleId, VehicleStatus
+
 from d4d_mission.allocator import apply_allocation_to_vehicles, plan_allocation
 from d4d_mission.blackbox import JsonlBlackBox
 from d4d_mission.capability_gap import analyze_capability_gaps
@@ -43,7 +45,6 @@ from d4d_mission.scenario import (
     create_initial_snapshot,
     refresh_snapshot,
 )
-from d4d_mission.types import EventType, VehicleId, VehicleStatus
 
 
 class MissionRuntime:
@@ -246,9 +247,8 @@ class MissionRuntime:
                 raise UnknownTargetError(target=event.target)
             return
 
-        if event.event_type is not EventType.ALERT_FLOOD:
-            msg = f"unsupported event type: {event.event_type}"
-            raise ValueError(msg)
+        msg = f"unsupported event type: {event.event_type}"
+        raise ValueError(msg)
 
 
 def runtime_error_to_status(error: Exception) -> int:

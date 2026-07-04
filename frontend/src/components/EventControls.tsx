@@ -11,7 +11,6 @@ const AREA_TARGET_EVENTS: readonly EventType[] = [
   "data_stale",
   "target_detected",
   "weather_degraded",
-  "asset_added",
   "reserve_depleted",
 ]
 
@@ -21,9 +20,6 @@ const VEHICLE_TARGET_EVENTS: readonly EventType[] = [
   "sensor_fail",
   "vehicle_lost",
   "comm_degraded",
-  "mobility_blocked",
-  "collision_risk",
-  "sensor_confidence_drop",
 ]
 
 export function EventControls() {

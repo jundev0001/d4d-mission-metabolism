@@ -68,7 +68,7 @@ def apply_micro_action(  # noqa: C901, PLR0911
             _activate_replacement(vehicles, action, role, default_area),
             _assign_vehicle(assignments, action, role, default_area),
         )
-    if action.action in {MicroActionType.REROUTE, MicroActionType.DECONFLICT_PATHS}:
+    if action.action == MicroActionType.REROUTE:
         return (
             _reroute_vehicle(vehicles, action),
             _assign_vehicle(assignments, action, role, default_area),
@@ -88,7 +88,6 @@ def apply_micro_action(  # noqa: C901, PLR0911
         standby = _set_vehicle_status(vehicles, action.vehicle_id, VehicleStatus.STANDBY)
         return standby, assignments
     if action.action in {
-        MicroActionType.SUPPRESS_ALERTS,
         MicroActionType.MARK_AREA_STALE,
         MicroActionType.DOWNGRADE_OBJECTIVE,
         MicroActionType.REQUEST_HUMAN_CONFIRM,

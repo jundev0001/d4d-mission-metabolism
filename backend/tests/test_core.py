@@ -129,11 +129,9 @@ def test_tactical_immune_builds_cards_for_recommended_events() -> None:
     cases = {
         EventType.DATA_STALE: ("B", MicroActionType.MARK_AREA_STALE),
         EventType.TARGET_DETECTED: ("B", MicroActionType.HANDOFF_TARGET),
-        EventType.MOBILITY_BLOCKED: ("UxV-05", MicroActionType.REROUTE),
+        EventType.GPS_DROP: ("UxV-05", MicroActionType.LAUNCH_RESERVE),
+        EventType.SENSOR_FAIL: ("UxV-05", MicroActionType.REPLACE),
         EventType.WEATHER_DEGRADED: ("C", MicroActionType.SWITCH_SENSOR_MODE),
-        EventType.COLLISION_RISK: ("UxV-03", MicroActionType.DECONFLICT_PATHS),
-        EventType.SENSOR_CONFIDENCE_DROP: ("UxV-01", MicroActionType.SWITCH_SENSOR_MODE),
-        EventType.ASSET_ADDED: ("A", MicroActionType.LAUNCH_RESERVE),
         EventType.RESERVE_DEPLETED: ("B", MicroActionType.DOWNGRADE_OBJECTIVE),
     }
 
