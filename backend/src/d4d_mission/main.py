@@ -7,6 +7,7 @@ import anyio
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from d4d_mission.catalog import mission_templates, vehicle_type_profiles
 from d4d_mission.immune import ManualActionError, RecommendationNotFoundError
 from d4d_mission.models import (
     AllocationResponse,
@@ -16,9 +17,11 @@ from d4d_mission.models import (
     EventRequest,
     FleetStateResponse,
     MetricSnapshot,
+    MissionCatalogResponse,
     RecommendationCard,
     ReplayResponse,
     StrictModel,
+    VehicleTypeCatalogResponse,
 )
 from d4d_mission.state import MissionRuntime, UnknownTargetError, runtime_error_to_status
 
@@ -45,6 +48,14 @@ def create_app() -> FastAPI:
     @app.post("/mission", response_model=DashboardState)
     async def create_mission(payload: MissionCreateRequest) -> DashboardState:
         return runtime.reset(seed=payload.seed)
+
+    @app.get("/mission/types", response_model=MissionCatalogResponse)
+    async def read_mission_types() -> MissionCatalogResponse:
+        return MissionCatalogResponse(templates=mission_templates())
+
+    @app.get("/vehicle/types", response_model=VehicleTypeCatalogResponse)
+    async def read_vehicle_types() -> VehicleTypeCatalogResponse:
+        return VehicleTypeCatalogResponse(profiles=vehicle_type_profiles())
 
     @app.get("/fleet/state", response_model=FleetStateResponse)
     async def fleet_state() -> FleetStateResponse:

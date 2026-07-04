@@ -10,6 +10,15 @@ def test_api_mission_event_decision_and_replay_flow() -> None:
     mission_response = client.post("/mission", json={})
     assert mission_response.status_code == 200
     assert mission_response.json()["mission"]["id"] == "mission-seoul-isr"
+    assert mission_response.json()["mission"]["mission_type"] == "area_recon"
+
+    mission_types_response = client.get("/mission/types")
+    assert mission_types_response.status_code == 200
+    assert len(mission_types_response.json()["templates"]) == 7
+
+    vehicle_types_response = client.get("/vehicle/types")
+    assert vehicle_types_response.status_code == 200
+    assert len(vehicle_types_response.json()["profiles"]) == 8
 
     event_response = client.post(
         "/event/inject",

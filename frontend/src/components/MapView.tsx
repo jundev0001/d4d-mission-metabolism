@@ -28,6 +28,18 @@ const AREA_SECTORS = [
   },
 ] as const
 
+const AIR_VEHICLE_TYPES = new Set([
+  "UAV",
+  "micro_scout_uav",
+  "quad_recon_uav",
+  "fixedwing_survey_uav",
+  "relay_uav",
+  "overwatch_uav",
+  "gps_denied_uav",
+])
+
+const GROUND_VEHICLE_TYPES = new Set(["UGV", "scout_rover", "sensor_rover"])
+
 export function MapView() {
   const dashboard = useMissionStore((state) => state.dashboard)
   if (!dashboard) {
@@ -167,8 +179,8 @@ function AssetGlyph({ vehicle }: { readonly vehicle: Vehicle }) {
     vehicle.health.health,
   )
   const readiness = availability >= 0.72 ? "ready" : availability >= 0.45 ? "degraded" : "stressed"
-  const className = `asset ${vehicle.type === "UAV" ? "asset-uav" : ""} ${
-    vehicle.type === "UGV" ? "asset-ugv" : ""
+  const className = `asset ${AIR_VEHICLE_TYPES.has(vehicle.type) ? "asset-uav" : ""} ${
+    GROUND_VEHICLE_TYPES.has(vehicle.type) ? "asset-ugv" : ""
   } ${vehicle.synthetic ? "asset-synthetic" : ""} ${vehicle.status} ${readiness}`
   const radius = vehicle.synthetic ? 1 : 1.75
   return (

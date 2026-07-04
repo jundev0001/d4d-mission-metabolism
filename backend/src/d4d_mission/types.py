@@ -10,6 +10,17 @@ type RecommendationId = str
 
 
 @unique
+class MissionType(StrEnum):
+    AREA_RECON = "area_recon"
+    ROUTE_RECON = "route_recon"
+    PERSISTENT_WATCH = "persistent_watch"
+    PERIMETER_SECURITY = "perimeter_security"
+    COMM_RELAY = "comm_relay"
+    GPS_DENIED_SCOUT = "gps_denied_scout"
+    DAMAGE_ASSESSMENT = "damage_assessment"
+
+
+@unique
 class CapabilityName(StrEnum):
     VISUAL_RECON = "visual_recon"
     RELAY = "relay"
@@ -20,9 +31,15 @@ class CapabilityName(StrEnum):
 
 @unique
 class VehicleType(StrEnum):
-    UAV = "UAV"
-    UGV = "UGV"
-    SYNTHETIC = "Synthetic Wingman"
+    MICRO_SCOUT_UAV = "micro_scout_uav"
+    QUAD_RECON_UAV = "quad_recon_uav"
+    FIXEDWING_SURVEY_UAV = "fixedwing_survey_uav"
+    RELAY_UAV = "relay_uav"
+    OVERWATCH_UAV = "overwatch_uav"
+    GPS_DENIED_UAV = "gps_denied_uav"
+    SCOUT_ROVER = "scout_rover"
+    SENSOR_ROVER = "sensor_rover"
+    SYNTHETIC_WINGMAN = "synthetic_wingman"
 
 
 @unique
@@ -78,4 +95,25 @@ CAPABILITY_NAMES: Final = (
     CapabilityName.OVERWATCH,
     CapabilityName.GPS_DENIED_NAV,
     CapabilityName.RESERVE,
+)
+
+MISSION_TYPES: Final = (
+    MissionType.AREA_RECON,
+    MissionType.ROUTE_RECON,
+    MissionType.PERSISTENT_WATCH,
+    MissionType.PERIMETER_SECURITY,
+    MissionType.COMM_RELAY,
+    MissionType.GPS_DENIED_SCOUT,
+    MissionType.DAMAGE_ASSESSMENT,
+)
+
+DEPLOYABLE_VEHICLE_TYPES: Final = (
+    VehicleType.MICRO_SCOUT_UAV,
+    VehicleType.QUAD_RECON_UAV,
+    VehicleType.FIXEDWING_SURVEY_UAV,
+    VehicleType.RELAY_UAV,
+    VehicleType.OVERWATCH_UAV,
+    VehicleType.GPS_DENIED_UAV,
+    VehicleType.SCOUT_ROVER,
+    VehicleType.SENSOR_ROVER,
 )
