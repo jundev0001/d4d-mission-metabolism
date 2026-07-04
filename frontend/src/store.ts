@@ -1,5 +1,7 @@
 import { create } from "zustand"
 import {
+  allocateMission as postAllocation,
+  configureMission as postMissionConfiguration,
   fetchDashboardState,
   fetchReplay,
   fetchVehicleTypes,
@@ -7,9 +9,10 @@ import {
   deployFleet as postFleetDeployment,
   resetMission,
   sendDecision,
+  type MissionConfigurePayload,
   websocketUrl,
 } from "./api"
-import type { CustomScenarioDocument } from "./customScenario"
+import { areaCentroid, type CustomScenarioDocument } from "./customScenario"
 import { customScenarioEventBatches } from "./customScenarioGraph"
 import { DEFAULT_CUSTOM_SCENARIO } from "./defaultCustomScenario"
 import type { BlackBoxEntry } from "./types"
@@ -41,6 +44,8 @@ type MissionStore = {
   readonly acceptSnapshot: (dashboard: DashboardState) => void
   readonly reset: () => Promise<void>
   readonly deployFleet: (items: FleetDeploymentPayload) => Promise<void>
+  readonly configureCustomMission: () => Promise<void>
+  readonly allocateMission: () => Promise<void>
   readonly injectEvent: (event: EventPayload) => Promise<void>
   readonly decide: (decision: DecisionPayload) => Promise<void>
   readonly runScriptedDemo: () => Promise<void>
@@ -103,6 +108,28 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
     }
   },
 
+  configureCustomMission: async () => {
+    try {
+      const dashboard = await postMissionConfiguration(
+        missionPayloadFromCustomScenario(get().customScenario),
+      )
+      const replay = await fetchReplay()
+      set({ dashboard, replay: replay.entries, selectedReplayIndex: 0, lastError: null })
+    } catch (error) {
+      set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
+    }
+  },
+
+  allocateMission: async () => {
+    try {
+      const dashboard = await postAllocation()
+      const replay = await fetchReplay()
+      set({ dashboard, replay: replay.entries, selectedReplayIndex: 0, lastError: null })
+    } catch (error) {
+      set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
+    }
+  },
+
   injectEvent: async (event) => {
     try {
       const dashboard = await postEvent(event)
@@ -148,6 +175,8 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
     set({ isRunningDemo: true, lastError: null })
     try {
       await get().reset()
+      await get().configureCustomMission()
+      await get().allocateMission()
       await customScenarioEventBatches(get().customScenario).reduce(
         (sequence, events) => sequence.then(() => injectDemoEventBatch(events, get)),
         Promise.resolve(),
@@ -200,5 +229,24 @@ async function injectDemoEventBatch(
   await delay(500)
   for (const event of events) {
     await getStore().injectEvent(event)
+  }
+}
+
+function missionPayloadFromCustomScenario(
+  customScenario: CustomScenarioDocument,
+): MissionConfigurePayload {
+  const firstArea = customScenario.map.areas.at(0)
+  return {
+    objective: customScenario.scenario.name,
+    mission_type: firstArea?.mission_type ?? "area_recon",
+    areas: customScenario.map.areas.map((area) => ({
+      id: area.id,
+      label: area.label,
+      mission_type: area.mission_type,
+      requirements: area.requirements,
+      priority: area.priority,
+      threat: area.threat,
+      center: areaCentroid(area),
+    })),
   }
 }

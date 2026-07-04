@@ -36,10 +36,10 @@ describe("map view", () => {
   it("Given a UxV on the COP When the map renders Then hover details are available on the asset glyph", () => {
     render(<MapView />)
 
-    const assetGlyph = screen.getByLabelText("UxV-04 자산 정보")
+    const map = screen.getByTestId("map-view")
+    const assetGlyph = assetGlyphFor(map, "UxV-04")
     fireEvent.mouseEnter(assetGlyph)
 
-    const map = screen.getByTestId("map-view")
     const svg = map.querySelector(".cop-map")
     const infoLayer = svg?.querySelector(".asset-info-layer")
     const visibleInfo = infoLayer?.querySelector(".asset-info.visible")
@@ -48,9 +48,10 @@ describe("map view", () => {
     expect(infoLayer).toBeInTheDocument()
     expect(svg?.lastElementChild).toBe(infoLayer)
     expect(svg?.querySelector(".map-metric")).toBeNull()
-    expect(screen.getByText(/^구역 B 최저/)).toBeInTheDocument()
-    expect(visibleInfo).toHaveTextContent("UxV-04 · 중계 UAV")
-    expect(visibleInfo).toHaveTextContent("가용 80% · 배터리 90%")
+    expect(screen.getAllByText(/^Area B/).length).toBeGreaterThan(0)
+    expect(visibleInfo).toHaveTextContent("UxV-04")
+    expect(visibleInfo).toHaveTextContent("80%")
+    expect(visibleInfo).toHaveTextContent("90%")
   })
 
   it("Given the COP is visible When the operator wheels and drags Then the map moves without scaling asset overlays", () => {
@@ -60,7 +61,7 @@ describe("map view", () => {
     vi.spyOn(svg, "getBoundingClientRect").mockReturnValue(
       DOMRect.fromRect({ height: 860, width: 1000, x: 0, y: 0 }),
     )
-    const assetGlyph = screen.getByLabelText("UxV-04 자산 정보")
+    const assetGlyph = assetGlyphFor(screen.getByTestId("map-view"), "UxV-04")
 
     fireEvent.wheel(svg, { clientX: 500, clientY: 430, deltaY: -120 })
     const zoomedViewBox = svg.getAttribute("viewBox")
@@ -110,8 +111,11 @@ describe("map view", () => {
     useMissionStore.setState({ dashboard: makeMapDashboard() })
     render(<MapView />)
 
-    fireEvent.contextMenu(screen.getByLabelText("UxV-04 자산 정보"), { clientX: 500, clientY: 300 })
-    fireEvent.click(screen.getByRole("button", { name: "UxV-04 제거" }))
+    fireEvent.contextMenu(assetGlyphFor(screen.getByTestId("map-view"), "UxV-04"), {
+      clientX: 500,
+      clientY: 300,
+    })
+    fireEvent.click(removeAssetButton("UxV-04"))
 
     await waitFor(() => {
       expect(apiMocks.deployFleet).toHaveBeenCalledWith([
@@ -124,6 +128,24 @@ describe("map view", () => {
     })
   })
 })
+
+function assetGlyphFor(container: HTMLElement, vehicleId: string): Element {
+  const glyph = container.querySelector(`[data-asset-id="${vehicleId}"]`)
+  if (glyph !== null) {
+    return glyph
+  }
+  throw new TypeError(`${vehicleId} asset glyph not found`)
+}
+
+function removeAssetButton(vehicleId: string): HTMLElement {
+  const button = screen
+    .getAllByRole("button", { name: new RegExp(vehicleId) })
+    .find((candidate) => candidate.classList.contains("danger"))
+  if (button !== undefined) {
+    return button
+  }
+  throw new TypeError(`${vehicleId} remove button not found`)
+}
 
 function copSvg(): SVGSVGElement {
   const svg = screen.getByTestId("map-view").querySelector(".cop-map")

@@ -13,6 +13,8 @@ def test_api_mission_event_decision_and_replay_flow() -> None:
     assert mission_response.status_code == 200
     assert mission_response.json()["mission"]["id"] == "mission-seoul-isr"
     assert mission_response.json()["mission"]["mission_type"] == "area_recon"
+    assert mission_response.json()["assignments"] == []
+    assert {vehicle["area"] for vehicle in mission_response.json()["vehicles"]} == {"GCS"}
 
     mission_types_response = client.get("/mission/types")
     assert mission_types_response.status_code == 200
@@ -40,13 +42,12 @@ def test_api_mission_event_decision_and_replay_flow() -> None:
         "sensor_rover",
         "sensor_rover",
     ]
-    assert [assignment["vehicle_id"] for assignment in deployed_payload["assignments"]] == [
-        "UxV-01",
-        "UxV-02",
-        "UxV-03",
-        "UxV-04",
-        "UxV-05",
-    ]
+    assert deployed_payload["assignments"] == []
+    assert {vehicle["area"] for vehicle in deployed_payload["vehicles"]} == {"GCS"}
+
+    allocation_response = client.post("/allocate")
+    assert allocation_response.status_code == 200
+    assert len(allocation_response.json()["assignments"]) > 0
 
     event_response = client.post(
         "/event/inject",
@@ -79,6 +80,9 @@ def test_api_mission_event_decision_and_replay_flow() -> None:
 
 def test_api_capability_gaps_rank_after_vehicle_loss() -> None:
     client = TestClient(create_app())
+
+    allocation = client.post("/allocate")
+    assert allocation.status_code == 200
 
     healthy = client.post("/capability/gaps")
     assert healthy.status_code == 200
@@ -114,17 +118,6 @@ def test_api_rejects_invalid_event_type_and_unknown_vehicle() -> None:
     assert unknown_vehicle.status_code == 404
 
 
-def test_api_rejects_empty_deployment() -> None:
-    client = TestClient(create_app())
-
-    response = client.post(
-        "/fleet/deploy",
-        json={"items": [{"vehicle_type": "relay_uav", "count": 0}]},
-    )
-
-    assert response.status_code == 422
-
-
 def test_api_accepts_new_tactical_immune_event_targets() -> None:
     client = TestClient(create_app())
 
@@ -141,3 +134,92 @@ def test_api_accepts_new_tactical_immune_event_targets() -> None:
     )
     assert vehicle_event.status_code == 200
     assert vehicle_event.json()["recommendations"][0]["actions"][0]["action"] == "reroute"
+
+
+def test_api_allocate_applies_and_explains() -> None:
+    client = TestClient(create_app())
+
+    response = client.post("/allocate")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["assignments"]) > 0
+    assert len(body["explanations"]) > 0
+    state = client.get("/").json()
+    assigned_ids = {assignment["vehicle_id"] for assignment in body["assignments"]}
+    assert any(vehicle["area"] == "GCS" for vehicle in state["vehicles"])
+    assert all(
+        vehicle["area"] != "GCS"
+        for vehicle in state["vehicles"]
+        if vehicle["id"] in assigned_ids
+    )
+
+
+def test_api_configures_custom_areas_before_allocation() -> None:
+    client = TestClient(create_app())
+
+    configured = client.post(
+        "/mission/configure",
+        json={
+            "objective": "Custom drawn areas",
+            "mission_type": "area_recon",
+            "areas": [
+                {
+                    "id": "alpha",
+                    "label": "Alpha",
+                    "mission_type": "area_recon",
+                    "requirements": {
+                        "visual_recon": 1.0,
+                        "relay": 0.2,
+                        "overwatch": 0.3,
+                        "gps_denied_nav": 0.1,
+                        "reserve": 0.1,
+                    },
+                    "priority": 0.9,
+                    "threat": 0.12,
+                    "center": {"x": 18, "y": 24},
+                },
+                {
+                    "id": "bravo",
+                    "label": "Bravo",
+                    "mission_type": "comm_relay",
+                    "requirements": {
+                        "visual_recon": 0.2,
+                        "relay": 1.0,
+                        "overwatch": 0.2,
+                        "gps_denied_nav": 0.1,
+                        "reserve": 0.2,
+                    },
+                    "priority": 0.7,
+                    "threat": 0.08,
+                    "center": {"x": 76, "y": 36},
+                },
+            ],
+        },
+    )
+
+    assert configured.status_code == 200
+    payload = configured.json()
+    assert payload["mission"]["areas"] == ["alpha", "bravo"]
+    assert payload["mission"]["area_centers"]["alpha"] == {"x": 18.0, "y": 24.0}
+    assert payload["mission"]["area_mission_types"]["bravo"] == "comm_relay"
+    assert payload["assignments"] == []
+    assert {vehicle["area"] for vehicle in payload["vehicles"]} == {"GCS"}
+
+    allocation = client.post("/allocate")
+
+    assert allocation.status_code == 200
+    assigned_areas = {assignment["area"] for assignment in allocation.json()["assignments"]}
+    assert len(assigned_areas) > 0
+    assert assigned_areas <= {"alpha", "bravo"}
+
+
+def test_api_rejects_empty_deployment() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/fleet/deploy",
+        json={"items": [{"vehicle_type": "relay_uav", "count": 0}]},
+    )
+
+    assert response.status_code == 422

@@ -124,6 +124,9 @@ const MissionSchema = z.object({
   }),
   autonomy_level: Percent,
   area_threats: z.record(z.string(), Percent),
+  area_priorities: z.record(z.string(), Percent),
+  area_centers: z.record(z.string(), PointSchema),
+  area_mission_types: z.record(z.string(), MissionTypeSchema),
   no_go_areas: z.array(z.string()),
 })
 
@@ -227,6 +230,8 @@ export type CapabilityName = z.infer<typeof CapabilityNameSchema>
 export type EventType = z.infer<typeof EventTypeSchema>
 export type DecisionAction = z.infer<typeof DecisionActionSchema>
 export type MicroActionType = z.infer<typeof MicroActionTypeSchema>
+export type Point = z.infer<typeof PointSchema>
+export type CapabilityDemand = z.infer<typeof CapabilityDemandSchema>
 export type Vehicle = z.infer<typeof VehicleSchema>
 export type MetricSnapshot = z.infer<typeof MetricSnapshotSchema>
 export type RecommendationCard = z.infer<typeof RecommendationCardSchema>

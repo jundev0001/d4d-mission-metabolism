@@ -13,6 +13,7 @@ from d4d_mission.deployment import DeploymentCount, DeploymentError
 from d4d_mission.immune import ManualActionError, RecommendationNotFoundError
 from d4d_mission.models import (
     AllocationResponse,
+    CapabilityDemand,
     CapabilityGapReport,
     CapabilityReport,
     DashboardState,
@@ -20,14 +21,20 @@ from d4d_mission.models import (
     EventRequest,
     FleetStateResponse,
     MetricSnapshot,
+    Mission,
     MissionCatalogResponse,
+    MissionConstraints,
+    Point,
     RecommendationCard,
     ReplayResponse,
     StrictModel,
     VehicleTypeCatalogResponse,
 )
 from d4d_mission.state import MissionRuntime, UnknownTargetError, runtime_error_to_status
-from d4d_mission.types import VehicleType  # noqa: TC001 - Pydantic needs this enum at runtime.
+from d4d_mission.types import (
+    MissionType,
+    VehicleType,
+)
 
 
 class MissionCreateRequest(StrictModel):
@@ -41,6 +48,22 @@ class DeploymentItemRequest(StrictModel):
 
 class FleetDeploymentRequest(StrictModel):
     items: tuple[DeploymentItemRequest, ...] = Field(min_length=1, max_length=8)
+
+
+class MissionAreaConfigureRequest(StrictModel):
+    id: str = Field(min_length=1, max_length=40, pattern=r"^[A-Za-z0-9_-]+$")
+    label: str = Field(min_length=1, max_length=48)
+    mission_type: MissionType = MissionType.AREA_RECON
+    requirements: CapabilityDemand
+    priority: float = Field(ge=0, le=1)
+    threat: float = Field(ge=0, le=1)
+    center: Point
+
+
+class MissionConfigureRequest(StrictModel):
+    objective: str = Field(default="Custom COP mission", min_length=1, max_length=160)
+    mission_type: MissionType = MissionType.AREA_RECON
+    areas: tuple[MissionAreaConfigureRequest, ...] = Field(min_length=1, max_length=12)
 
 
 def create_app() -> FastAPI:
@@ -61,6 +84,14 @@ def create_app() -> FastAPI:
     @app.post("/mission", response_model=DashboardState)
     async def create_mission(payload: MissionCreateRequest) -> DashboardState:
         return runtime.reset(seed=payload.seed)
+
+    @app.post("/mission/configure", response_model=DashboardState)
+    async def configure_mission(payload: MissionConfigureRequest) -> DashboardState:
+        try:
+            mission = _mission_from_configure_request(payload)
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        return runtime.configure_mission(mission=mission)
 
     @app.get("/mission/types", response_model=MissionCatalogResponse)
     async def read_mission_types() -> MissionCatalogResponse:
@@ -146,6 +177,25 @@ def create_app() -> FastAPI:
 def _raise_http(error: Exception) -> NoReturn:
     status_code = runtime_error_to_status(error)
     raise HTTPException(status_code=status_code, detail=str(error)) from error
+
+
+def _mission_from_configure_request(payload: MissionConfigureRequest) -> Mission:
+    area_ids = tuple(area.id for area in payload.areas)
+    if len(set(area_ids)) != len(area_ids):
+        msg = "area ids must be unique"
+        raise ValueError(msg)
+    return Mission(
+        id="mission-custom-cop",
+        mission_type=payload.mission_type,
+        objective=payload.objective,
+        areas=area_ids,
+        requirements={area.id: area.requirements for area in payload.areas},
+        constraints=MissionConstraints(),
+        area_threats={area.id: area.threat for area in payload.areas},
+        area_priorities={area.id: area.priority for area in payload.areas},
+        area_centers={area.id: area.center for area in payload.areas},
+        area_mission_types={area.id: area.mission_type for area in payload.areas},
+    )
 
 
 app = create_app()

@@ -1,17 +1,26 @@
 import {
+  areaCentroid,
   type CustomMapArea,
+  type CustomPoint,
   type CustomScenarioDocument,
   type CustomScenarioEdge,
   type CustomScenarioEvent,
   type CustomScenarioNode,
+  MAX_SCENARIO_AREAS,
   MAX_SCENARIO_EDGES,
   MAX_SCENARIO_NODES,
+  requirementsForMissionType,
 } from "./customScenario"
 import { canAddScenarioEdge } from "./customScenarioGraph"
 
 type ScenarioMutationResult = {
   readonly document: CustomScenarioDocument
   readonly selectedNodeId: string
+}
+
+type AreaMutationResult = {
+  readonly document: CustomScenarioDocument
+  readonly selectedAreaId: string
 }
 
 const DEFAULT_EVENT: CustomScenarioEvent = {
@@ -45,6 +54,60 @@ export function withMapArea(
       ...document.map,
       areas: document.map.areas.map((area) => (area.id === areaId ? { ...area, ...patch } : area)),
     },
+  }
+}
+
+export function addMapArea(
+  document: CustomScenarioDocument,
+  points?: readonly CustomPoint[],
+): AreaMutationResult {
+  if (document.map.areas.length >= MAX_SCENARIO_AREAS) {
+    return { document, selectedAreaId: document.map.areas.at(0)?.id ?? "" }
+  }
+  const areaPoints = points === undefined || points.length < 3 ? defaultAreaPoints(document) : points
+  const centroid = areaCentroid({ points: areaPoints })
+  const id = nextAreaId(document)
+  const area: CustomMapArea = {
+    id,
+    label: `Area ${id}`,
+    points: areaPoints.map((point) => ({ x: clamp(point.x, 0, 100), y: clamp(point.y, 0, 86) })),
+    label_position: { x: clamp(centroid.x - 6, 0, 100), y: clamp(centroid.y - 3, 0, 86) },
+    metric_position: { x: clamp(centroid.x - 6, 0, 100), y: clamp(centroid.y + 3, 0, 86) },
+    threat_position: centroid,
+    mission_type: "area_recon",
+    priority: 0.6,
+    threat: 0.1,
+    requirements: requirementsForMissionType("area_recon"),
+  }
+  return {
+    document: { ...document, map: { ...document.map, areas: [...document.map.areas, area] } },
+    selectedAreaId: id,
+  }
+}
+
+export function removeMapArea(
+  document: CustomScenarioDocument,
+  areaId: string,
+): AreaMutationResult {
+  if (document.map.areas.length <= 1) {
+    return { document, selectedAreaId: areaId }
+  }
+  const areas = document.map.areas.filter((area) => area.id !== areaId)
+  const fallbackTarget = areas.at(0)?.id ?? areaId
+  return {
+    document: {
+      ...document,
+      map: { ...document.map, areas },
+      scenario: {
+        ...document.scenario,
+        nodes: document.scenario.nodes.map((node) =>
+          node.event.target === areaId
+            ? { ...node, event: { ...node.event, target: fallbackTarget } }
+            : node,
+        ),
+      },
+    },
+    selectedAreaId: fallbackTarget,
   }
 }
 
@@ -234,9 +297,10 @@ function createScenarioNode(
   document: CustomScenarioDocument,
   options?: Partial<Pick<CustomScenarioNode, "event" | "position">>,
 ): CustomScenarioNode {
+  const fallbackTarget = document.map.areas.at(0)?.id ?? DEFAULT_EVENT.target
   return {
     id: nextNodeId(document),
-    event: options?.event ?? DEFAULT_EVENT,
+    event: options?.event ?? { ...DEFAULT_EVENT, target: fallbackTarget },
     position: options?.position ?? { x: 16, y: 62 },
   }
 }
@@ -261,6 +325,27 @@ function findNode(
   nodeId: string,
 ): CustomScenarioNode | undefined {
   return document.scenario.nodes.find((node) => node.id === nodeId)
+}
+
+function nextAreaId(document: CustomScenarioDocument): string {
+  const existing = new Set(document.map.areas.map((area) => area.id))
+  for (let index = 1; index <= MAX_SCENARIO_AREAS + 1; index += 1) {
+    const candidate = `area-${index.toString().padStart(2, "0")}`
+    if (!existing.has(candidate)) {
+      return candidate
+    }
+  }
+  return `area-${Date.now().toString(36)}`
+}
+
+function defaultAreaPoints(document: CustomScenarioDocument): readonly CustomPoint[] {
+  const offset = document.map.areas.length * 4
+  return [
+    { x: clamp(42 + offset, 0, 100), y: clamp(22 + offset, 0, 86) },
+    { x: clamp(62 + offset, 0, 100), y: clamp(24 + offset, 0, 86) },
+    { x: clamp(58 + offset, 0, 100), y: clamp(44 + offset, 0, 86) },
+    { x: clamp(38 + offset, 0, 100), y: clamp(42 + offset, 0, 86) },
+  ]
 }
 
 function clamp(value: number, min: number, max: number): number {
