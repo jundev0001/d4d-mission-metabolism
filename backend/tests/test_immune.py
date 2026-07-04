@@ -84,6 +84,26 @@ def test_multi_action_card_does_not_double_book_a_vehicle() -> None:
     assert len(vehicle_ids) == len(set(vehicle_ids))
 
 
+def test_adaptive_response_planner_combines_direct_action_and_reallocation() -> None:
+    snapshot = _allocated_snapshot(seed=11)
+    event = EventRequest(event_type=EventType.TARGET_DETECTED, target="B", severity=0.82)
+
+    card = build_recommendation(snapshot=snapshot, event=event)
+
+    assert "adaptive_reallocation" in card.causes
+    assert any(action.action == MicroActionType.REQUEST_HUMAN_CONFIRM for action in card.actions)
+    assert any(
+        action.action
+        in {
+            MicroActionType.HANDOFF_TARGET,
+            MicroActionType.REASSIGN_ROLE,
+            MicroActionType.LAUNCH_RESERVE,
+        }
+        for action in card.actions
+    )
+    assert card.expected_effect.operator_actions_delta < 0
+
+
 def test_expected_effect_scales_with_gap_severity() -> None:
     event = EventRequest(event_type=EventType.COMM_JAM, target="B", severity=0.2)
     actions = (card_action("UxV-01", MicroActionType.HOLD, "B", "hold"),)

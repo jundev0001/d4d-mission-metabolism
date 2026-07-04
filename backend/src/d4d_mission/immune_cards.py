@@ -10,6 +10,7 @@ from d4d_mission.models import (
     EventRequest,
     RecommendationCard,
 )
+from d4d_mission.response_planner import plan_event_response
 from d4d_mission.types import CapabilityName, EventType, MicroActionType, VehicleStatus
 
 type CardBuilder = Callable[[str, DashboardState, EventRequest], RecommendationCard]
@@ -17,6 +18,9 @@ type CardBuilder = Callable[[str, DashboardState, EventRequest], RecommendationC
 
 def build_recommendation(snapshot: DashboardState, event: EventRequest) -> RecommendationCard:
     card_id = f"rec-{len(snapshot.recommendations) + len(snapshot.events) + 1:03d}"
+    planned = plan_event_response(card_id=card_id, snapshot=snapshot, event=event)
+    if planned is not None:
+        return planned
     builders: dict[EventType, CardBuilder] = {
         EventType.COMM_JAM: _comm_jam_card,
         EventType.BATTERY_DROP: _battery_card,

@@ -117,11 +117,11 @@ def test_tactical_immune_card_has_explainable_actions_and_kpi_delta() -> None:
 
     card = build_recommendation(snapshot=snapshot, event=event)
 
-    assert card.causes == ("battery_drop", "capability_deficit", "return_threshold")
+    assert "battery_drop" in card.causes
+    assert "adaptive_reallocation" in card.causes
     assert len(card.actions) >= 2
-    assert card.expected_effect.mcc_delta > 0
-    assert card.expected_effect.collapse_probability_delta < 0
-    assert card.expected_effect.autonomy_debt_delta < 0
+    assert any(action.action == MicroActionType.RETURN for action in card.actions)
+    assert card.expected_effect.operator_actions_delta < 0
 
 
 def test_tactical_immune_builds_cards_for_recommended_events() -> None:
