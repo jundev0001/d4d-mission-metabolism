@@ -137,6 +137,12 @@
   pointer-events: none;
 }
 
+.map-label-shield {
+  fill: color-mix(in srgb, var(--surface-inset) 88%, transparent);
+  stroke: color-mix(in srgb, var(--border-subtle) 70%, transparent);
+  stroke-width: 0.28;
+}
+
 .map-label {
   fill: var(--text-secondary);
   font-size: 3.1px;
@@ -272,6 +278,14 @@
 .asset-label {
   fill: var(--text-secondary);
   font-size: 2.25px;
+  opacity: 0;
+  transition: opacity 120ms ease-out;
+}
+
+.asset.asset-active .asset-label,
+.asset:focus .asset-label,
+.asset:hover .asset-label {
+  opacity: 1;
 }
 
 .asset-info {
@@ -418,7 +432,7 @@
 
 .cop-readout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(164px, 1fr));
   gap: var(--space-2);
   margin-top: var(--space-3);
   min-inline-size: 0;
@@ -426,21 +440,41 @@
   border: 0;
 }
 
-.cop-readout span {
+.cop-readout > span {
+  display: grid;
+  gap: 2px;
   min-width: 0;
   padding: var(--space-2) var(--space-3);
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   background: var(--surface-inset);
   color: var(--text-secondary);
   font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  white-space: normal;
+  word-break: keep-all;
 }
 
 .area-coverage-chip {
   color: var(--text-primary);
+}
+
+.area-coverage-chip strong {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.area-coverage-mission {
+  color: var(--text-secondary);
+}
+
+.area-coverage-metrics {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
 }
 
 .map-legend {

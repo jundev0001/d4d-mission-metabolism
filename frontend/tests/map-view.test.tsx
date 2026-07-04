@@ -131,10 +131,24 @@ describe("map view", () => {
 
     render(<MapView />)
 
-    expect(screen.getByText("Area B")).toBeInTheDocument()
-    expect(screen.getByText("중계 임무")).toBeInTheDocument()
+    expect(screen.getAllByText("Area B").length).toBeGreaterThan(0)
+    expect(screen.getAllByText("중계 임무").length).toBeGreaterThan(0)
     expect(screen.getByTestId("action-path-UxV-06-B")).toBeInTheDocument()
     expect(screen.getByText("UxV-06 → Area B")).toBeInTheDocument()
+  })
+
+  it("Given area mission summaries When the COP readout renders Then long Korean text is preserved without an ellipsis-only chip", () => {
+    render(<MapView />)
+
+    const areaSummary = screen.getByTitle(/Area A 구역 정찰/)
+    const missionLine = areaSummary.querySelector(".area-coverage-mission")
+    const metricsLine = areaSummary.querySelector(".area-coverage-metrics")
+
+    expect(areaSummary).toHaveTextContent("Area A")
+    expect(missionLine).toHaveTextContent("구역 정찰")
+    expect(metricsLine).toHaveTextContent(/우선순위/)
+    expect(metricsLine).toHaveTextContent(/최저/)
+    expect(areaSummary.getAttribute("title")).toContain("Area A 구역 정찰")
   })
 
   it("Given deployed UxVs When an asset is removed from the COP menu Then fleet deployment is updated", async () => {

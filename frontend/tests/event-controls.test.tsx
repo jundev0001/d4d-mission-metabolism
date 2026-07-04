@@ -37,9 +37,9 @@ describe("event controls", () => {
   it("Given a selected area event When injected Then the selected event payload is emitted", () => {
     render(<EventControls />)
 
-    fireEvent.change(screen.getByLabelText("Event"), { target: { value: "data_stale" } })
-    fireEvent.change(screen.getByLabelText("Target"), { target: { value: "C" } })
-    fireEvent.click(screen.getByRole("button", { name: /Inject/ }))
+    fireEvent.change(screen.getByLabelText("이벤트"), { target: { value: "data_stale" } })
+    fireEvent.change(screen.getByLabelText("대상"), { target: { value: "C" } })
+    fireEvent.click(screen.getByRole("button", { name: /주입/ }))
 
     expect(storeMock.injectEvent).toHaveBeenCalledWith({
       event_type: "data_stale",
@@ -53,7 +53,7 @@ describe("event controls", () => {
 
     render(<EventControls />)
 
-    expect(screen.getByRole("button", { name: /Inject/ })).toBeDisabled()
+    expect(screen.getByRole("button", { name: /주입/ })).toBeDisabled()
     expect(screen.getByText("편성 승인 후 이벤트 주입 가능")).toBeInTheDocument()
   })
 })

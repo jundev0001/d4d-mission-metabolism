@@ -1,0 +1,41 @@
+{
+  "startedAt": "2026-07-04T19:58:24.500Z",
+  "urls": {
+    "frontend": "http://127.0.0.1:4173/",
+    "backend": "http://127.0.0.1:8000/"
+  },
+  "checks": {
+    "backendResetStatus": 200,
+    "copReadoutTitleIncludesMission": true,
+    "copReadoutAllowsWrap": true,
+    "copReadoutChipHeight": 69,
+    "copAssetLabelsHiddenByDefault": true,
+    "fleetStepShowsDeployment": true,
+    "fleetStepHidesMapBuilder": true,
+    "fleetStepHidesEventControls": true,
+    "mapStepTitleVisible": true,
+    "mapStepTitleNotSqueezed": true,
+    "mapStepHasDrawButton": true,
+    "mapStepHidesFlowCanvas": true,
+    "dragCreatedArea": true,
+    "mapStepAreaCountUpdated": true,
+    "eventsStepTitleVisible": true,
+    "eventsStepShowsFlowCanvas": true,
+    "eventsStepShowsEventControls": true,
+    "eventsStepHidesMapBuilder": true,
+    "desktopOverflowOffenders": [],
+    "mobileEventsFlowVisible": true,
+    "mobileOverflowOffenders": []
+  },
+  "screenshots": [
+    "C:\\Users\\Jun\\Documents\\D4D\\screenshots\\15-desktop-mission-cop-readout.png",
+    "C:\\Users\\Jun\\Documents\\D4D\\screenshots\\16-desktop-scenario-step-fleet.png",
+    "C:\\Users\\Jun\\Documents\\D4D\\screenshots\\17-desktop-scenario-step-map-before-drag.png",
+    "C:\\Users\\Jun\\Documents\\D4D\\screenshots\\18-desktop-scenario-step-map-after-drag.png",
+    "C:\\Users\\Jun\\Documents\\D4D\\screenshots\\19-desktop-scenario-step-events.png",
+    "C:\\Users\\Jun\\Documents\\D4D\\screenshots\\20-mobile-scenario-step-events.png"
+  ],
+  "passed": true,
+  "failedChecks": [],
+  "finishedAt": "2026-07-04T19:58:28.914Z"
+}

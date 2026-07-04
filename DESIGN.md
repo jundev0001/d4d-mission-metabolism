@@ -152,12 +152,12 @@ All spacing derives from a 4px base.
 - **Motion**: no decorative animation.
 
 ### Scenario Builder
-- **Structure**: lives inside the 시나리오 workspace with fleet formation controls, event injection, map name controls, wide flow canvas, draggable event nodes, selected-node editor, graph editor, edge list, import/export/test commands, and the black box log nearby.
-- **Variants**: default scenario, imported scenario, invalid import, connection mode, parallel event stage.
+- **Structure**: lives inside the 시나리오 workspace as a three-step workflow: 최초 UxV 선정, 구역(지도) 커스텀, 이벤트 플로우차트. A thin horizontal workflow strip directly under the workspace tabs selects the step, the center shows one active editor, and the right rail keeps progress, event injection when relevant, and black box log.
+- **Variants**: fleet selection, map editing, event flow editing, imported scenario, invalid import, connection mode, parallel event stage.
 - **Spacing**: --space-3 between command clusters, --space-2 inside node controls, compact edge rows in the side stack.
-- **States**: selected node uses accent border, connection source uses info outline, valid connection targets use dashed borders, dragging uses elevated surface and cursor state, import/graph errors use danger text.
-- **Accessibility**: flow nodes are native buttons with Korean event and target labels; edge removal uses labelled buttons; range controls expose numeric labels.
-- **Motion**: only border/background changes on selection, connection mode, and hover.
+- **States**: selected workflow step uses accent border, selected map area uses accent border, selected node uses accent border, connection source uses info outline, valid connection targets use dashed borders, dragging uses elevated surface and cursor state, import/graph errors use danger text.
+- **Accessibility**: workflow steps, flow nodes, and area rows are native buttons with Korean labels; edge removal uses labelled buttons; range controls expose numeric labels.
+- **Motion**: only border/background changes on selection, connection mode, hover, and drag affordance.
 
 ### Workspace Tabs
 - **Structure**: two-button segmented control below mission metrics: 임무 판단 and 시나리오.

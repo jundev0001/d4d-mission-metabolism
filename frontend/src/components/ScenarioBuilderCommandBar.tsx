@@ -26,11 +26,11 @@ export function ScenarioBuilderCommandBar({
     <div className="builder-command-row">
       <button className="button" type="button" onClick={onExport}>
         <Download size={15} />
-        Export
+        내보내기
       </button>
       <button className="button" type="button" onClick={() => fileInputRef.current?.click()}>
         <Upload size={15} />
-        Import
+        가져오기
       </button>
       <button
         className="button"
@@ -39,7 +39,7 @@ export function ScenarioBuilderCommandBar({
         onClick={() => void onApplyMission()}
       >
         <CheckCircle2 size={15} />
-        Apply mission
+        임무 적용
       </button>
       <button
         className="button"
@@ -57,7 +57,7 @@ export function ScenarioBuilderCommandBar({
         onClick={() => void onRunFlow()}
       >
         <Play size={15} />
-        Run flow
+        플로우 실행
       </button>
       <input
         ref={fileInputRef}

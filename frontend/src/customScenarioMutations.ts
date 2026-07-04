@@ -70,7 +70,7 @@ export function addMapArea(
   const id = nextAreaId(document)
   const area: CustomMapArea = {
     id,
-    label: `Area ${id}`,
+    label: nextAreaLabel(document),
     points: areaPoints.map((point) => ({ x: clamp(point.x, 0, 100), y: clamp(point.y, 0, 86) })),
     label_position: { x: clamp(centroid.x - 6, 0, 100), y: clamp(centroid.y - 3, 0, 86) },
     metric_position: { x: clamp(centroid.x - 6, 0, 100), y: clamp(centroid.y + 3, 0, 86) },
@@ -337,6 +337,17 @@ function nextAreaId(document: CustomScenarioDocument): string {
     }
   }
   return `area-${Date.now().toString(36)}`
+}
+
+function nextAreaLabel(document: CustomScenarioDocument): string {
+  const existing = new Set(document.map.areas.map((area) => area.label.trim().toUpperCase()))
+  for (let index = 0; index <= MAX_SCENARIO_AREAS; index += 1) {
+    const candidate = `Area ${String.fromCharCode("A".charCodeAt(0) + index)}`
+    if (!existing.has(candidate.toUpperCase())) {
+      return candidate
+    }
+  }
+  return `Area ${document.map.areas.length + 1}`
 }
 
 function defaultAreaPoints(document: CustomScenarioDocument): readonly CustomPoint[] {

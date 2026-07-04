@@ -53,6 +53,7 @@ export function MapAreaLabel({
       className="map-area-label"
       transform={`translate(${area.label_position.x} ${area.label_position.y}) scale(${overlayScale})`}
     >
+      <rect className="map-label-shield" x="-12.4" y="-3.4" width="24.8" height="11.6" rx="1.4" />
       <text className="map-label" x="0" y="0">
         {area.label}
       </text>

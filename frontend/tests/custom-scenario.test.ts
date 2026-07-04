@@ -103,6 +103,7 @@ describe("custom scenario document", () => {
     const imported = parseCustomScenarioText(serializeCustomScenario(removed.document))
 
     expect(added.document.map.areas).toHaveLength(4)
+    expect(added.document.map.areas.at(-1)?.label).toBe("Area D")
     expect(imported.map.areas.some((area) => area.id === added.selectedAreaId)).toBe(false)
     expect(imported.scenario.nodes[0]?.event.target).toBe(imported.map.areas[0]?.id)
   })

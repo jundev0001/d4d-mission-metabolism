@@ -5,7 +5,6 @@ import {
   type CustomScenarioDocument,
   type CustomScenarioEdge,
   type CustomScenarioNode,
-  MAX_SCENARIO_NODES,
   parseCustomScenarioText,
   serializeCustomScenario,
 } from "../customScenario"
@@ -26,13 +25,16 @@ import {
   withScenarioNodePosition,
 } from "../customScenarioMutations"
 import { useMissionStore } from "../store"
-import { MissionIntentControls } from "./MissionIntentControls"
 import { ScenarioBuilderCommandBar } from "./ScenarioBuilderCommandBar"
-import { ScenarioMapEditor, ScenarioNodeEditor } from "./ScenarioBuilderEditors"
-import { ScenarioFlowCanvas } from "./ScenarioFlowCanvas"
-import { ScenarioGraphEditor } from "./ScenarioGraphEditor"
+import {
+  type ScenarioBuilderMode,
+  ScenarioEventsStage,
+  ScenarioMapStage,
+} from "./ScenarioBuilderStageViews"
 
-export function ScenarioBuilderPanel() {
+export type { ScenarioBuilderMode }
+
+export function ScenarioBuilderPanel({ mode }: { readonly mode: ScenarioBuilderMode }) {
   const scenario = useMissionStore((state) => state.customScenario)
   const dashboard = useMissionStore((state) => state.dashboard)
   const allocateMission = useMissionStore((state) => state.allocateMission)
@@ -122,7 +124,7 @@ export function ScenarioBuilderPanel() {
   function handleAddEdge(edge: CustomScenarioEdge): void {
     const next = upsertScenarioEdge(scenario, edge)
     if (next === scenario) {
-      setFlowNotice("Connection rejected: duplicate or cyclic edge")
+      setFlowNotice("연결 거부: 중복 연결이거나 순환 구조입니다.")
       return
     }
     updateScenario(next)
@@ -161,11 +163,17 @@ export function ScenarioBuilderPanel() {
     }
   }
 
+  const title = mode === "map" ? "구역(지도) 커스텀" : "이벤트 플로우차트 편집"
+  const caption =
+    mode === "map"
+      ? `${scenario.map.areas.length}개 구역`
+      : `${scenario.scenario.nodes.length}개 이벤트`
+
   return (
-    <section className="panel scenario-builder-panel" aria-label="Custom scenario builder">
+    <section className={`panel scenario-builder-panel scenario-builder-${mode}`} aria-label={title}>
       <div className="panel-title">
-        <span>Custom scenario builder</span>
-        <span className="caption">No-code JSON</span>
+        <span>{title}</span>
+        <span className="caption">{caption}</span>
       </div>
       <ScenarioBuilderCommandBar
         disabled={isRunningDemo}
@@ -177,79 +185,47 @@ export function ScenarioBuilderPanel() {
       />
       {importError || flowNotice ? (
         <div className="builder-message-row" role="alert">
-          {importError ? <p className="builder-error">Import failed: {importError}</p> : null}
+          {importError ? <p className="builder-error">가져오기 실패: {importError}</p> : null}
           {flowNotice ? <p className="builder-error">{flowNotice}</p> : null}
         </div>
       ) : null}
 
-      <div className="builder-meta-grid">
-        <label className="builder-field">
-          <span>Map</span>
-          <input
-            value={scenario.map.name}
-            onChange={(event) => updateScenario(withMapName(scenario, event.currentTarget.value))}
-          />
-        </label>
-        <label className="builder-field">
-          <span>Scenario</span>
-          <input
-            value={scenario.scenario.name}
-            onChange={(event) =>
-              updateScenario(withScenarioName(scenario, event.currentTarget.value))
-            }
-          />
-        </label>
-      </div>
-      <MissionIntentControls
-        intent={scenario.intent}
-        onChange={(intent) => updateScenario({ ...scenario, intent })}
-      />
-
-      <ScenarioFlowCanvas
-        connectFromNodeId={connectFromNodeId}
-        document={scenario}
-        selectedNodeId={activeNode.id}
-        onConnectNode={handleConnectNode}
-        onRemoveEdge={handleRemoveEdge}
-        onSelectNode={setSelectedNodeId}
-        onMoveNode={(nodeId, position) =>
-          updateScenario(withScenarioNodePosition(scenario, nodeId, position))
-        }
-      />
-
-      <div className="builder-side-stack">
-        <ScenarioNodeEditor
-          node={activeNode}
-          targetOptions={targetOptions}
-          onChange={updateSelectedNode}
+      {mode === "map" ? (
+        <ScenarioMapStage
+          activeArea={activeArea}
+          scenario={scenario}
+          onAddArea={handleAddArea}
+          onDeleteArea={handleRemoveArea}
+          onSelectArea={setSelectedAreaId}
+          onUpdateArea={updateSelectedArea}
+          onUpdateMapName={(name) => updateScenario(withMapName(scenario, name))}
+          onUpdateScenario={updateScenario}
+          onUpdateScenarioName={(name) => updateScenario(withScenarioName(scenario, name))}
         />
-        <ScenarioGraphEditor
+      ) : (
+        <ScenarioEventsStage
+          activeNode={activeNode}
           connectFromNodeId={connectFromNodeId}
-          document={scenario}
+          scenario={scenario}
           selectedNodeId={activeNode.id}
+          targetOptions={targetOptions}
           onAddEdge={handleAddEdge}
           onAddNode={handleAddNode}
           onAddParallelNode={() => applyNodeMutation(addParallelScenarioNode)}
           onCancelConnection={() => setConnectFromNodeId(null)}
+          onConnectNode={handleConnectNode}
           onDeleteNode={() => applyNodeMutation(removeScenarioNode)}
           onInsertAfter={() => applyNodeMutation(insertScenarioNodeAfter)}
+          onMoveNode={(nodeId, position) =>
+            updateScenario(withScenarioNodePosition(scenario, nodeId, position))
+          }
           onRemoveEdge={handleRemoveEdge}
+          onSelectNode={setSelectedNodeId}
           onSetEntry={() => updateScenario(setScenarioEntryNode(scenario, activeNode.id))}
           onStartConnection={() => setConnectFromNodeId(activeNode.id)}
+          onUpdateNode={updateSelectedNode}
         />
-        <ScenarioMapEditor
-          areas={scenario.map.areas}
-          selectedArea={activeArea}
-          onAddArea={handleAddArea}
-          onChange={updateSelectedArea}
-          onDeleteArea={handleRemoveArea}
-          onSelectArea={setSelectedAreaId}
-        />
-        <p className="builder-hint">
-          Nodes {scenario.scenario.nodes.length}/{MAX_SCENARIO_NODES} | Links{" "}
-          {scenario.scenario.edges.length}
-        </p>
-      </div>
+      )}
     </section>
   )
 }

@@ -40,14 +40,14 @@ export function EventControls() {
   return (
     <section className="panel event-panel">
       <div className="panel-title">
-        <span>Inject event</span>
+        <span>이벤트 주입</span>
         <span className="caption">
-          {canInject ? "Adaptive response" : "편성 승인 후 이벤트 주입 가능"}
+          {canInject ? "적응형 대응" : "편성 승인 후 이벤트 주입 가능"}
         </span>
       </div>
       <div className="event-form">
         <label className="builder-field">
-          <span>Event</span>
+          <span>이벤트</span>
           <select
             value={eventType}
             onChange={(event) => {
@@ -65,7 +65,7 @@ export function EventControls() {
           </select>
         </label>
         <label className="builder-field">
-          <span>Target</span>
+          <span>대상</span>
           <select value={selectedTarget} onChange={(event) => setTarget(event.currentTarget.value)}>
             {targetOptions.map((value) => (
               <option value={value} key={value}>
@@ -75,7 +75,7 @@ export function EventControls() {
           </select>
         </label>
         <label className="builder-field range-field">
-          <span>Severity</span>
+          <span>강도</span>
           <input
             type="range"
             min={0}
@@ -99,7 +99,7 @@ export function EventControls() {
           }
         >
           <Send size={15} />
-          Inject
+          주입
         </button>
       </div>
     </section>

@@ -1,14 +1,11 @@
 import { useEffect, useState } from "react"
-import { BlackBoxPanel } from "./components/BlackBoxPanel"
 import { CapabilityPanel } from "./components/CapabilityPanel"
 import { EvaluationPanel } from "./components/EvaluationPanel"
-import { EventControls } from "./components/EventControls"
-import { FleetDeploymentPanel } from "./components/FleetDeploymentPanel"
 import { Header } from "./components/Header"
 import { MapView } from "./components/MapView"
 import { MetricStrip } from "./components/MetricStrip"
 import { RecommendationPanel } from "./components/RecommendationPanel"
-import { ScenarioBuilderPanel } from "./components/ScenarioBuilderPanel"
+import { ScenarioWorkspace } from "./components/ScenarioWorkspace"
 import { useMissionStore } from "./store"
 import "./App.css"
 
@@ -96,23 +93,6 @@ function MissionWorkspace() {
       </section>
       <aside className="right-rail">
         <RecommendationPanel />
-      </aside>
-    </section>
-  )
-}
-
-function ScenarioWorkspace() {
-  return (
-    <section className="scenario-workspace" aria-label="시나리오 작업면">
-      <aside className="scenario-rail">
-        <FleetDeploymentPanel />
-        <EventControls />
-      </aside>
-      <section className="scenario-builder-stage">
-        <ScenarioBuilderPanel />
-      </section>
-      <aside className="scenario-log-rail">
-        <BlackBoxPanel />
       </aside>
     </section>
   )

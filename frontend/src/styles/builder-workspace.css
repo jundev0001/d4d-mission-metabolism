@@ -1,36 +1,204 @@
 .scenario-workspace {
   display: grid;
-  grid-template-columns: 296px minmax(540px, 1fr) 360px;
-  gap: var(--space-4);
-  margin-top: var(--space-4);
+  gap: var(--space-3);
+  margin-top: var(--space-2);
 }
 
-.scenario-rail,
-.scenario-builder-stage,
-.scenario-log-rail {
+.scenario-stepper-strip {
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  min-width: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface-panel);
+}
+
+.scenario-stepper-heading {
+  padding-inline: var(--space-2);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.scenario-workflow-shell {
+  display: grid;
+  grid-template-columns: minmax(560px, 1fr) 340px;
   gap: var(--space-4);
-  align-content: start;
+  align-items: start;
   min-width: 0;
 }
 
+.scenario-stage-main,
+.scenario-support-rail {
+  min-width: 0;
+}
+
+.scenario-stage-main,
+.scenario-support-rail {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+}
+
+.scenario-step-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.scenario-step-button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+  width: 100%;
+  min-height: 38px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--surface-inset);
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 180ms ease-in-out,
+    border-color 180ms ease-in-out,
+    color 180ms ease-in-out;
+}
+
+.scenario-step-button:hover,
+.scenario-step-button:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.scenario-step-button:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+}
+
+.scenario-step-button.active {
+  border-color: color-mix(in srgb, var(--accent-primary) 72%, var(--border-strong));
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.scenario-step-button span {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scenario-step-button small {
+  display: none;
+}
+
+.scenario-step-button b {
+  grid-column: 2;
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.scenario-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.scenario-status-grid div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--surface-inset);
+}
+
+.scenario-status-grid dt,
+.scenario-status-grid dd {
+  margin: 0;
+}
+
+.scenario-status-grid dt {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.scenario-status-grid dd {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
 .scenario-workspace .scenario-builder-panel {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "title"
+    "commands"
+    "error";
+}
+
+.scenario-workspace .scenario-builder-map {
+  grid-template-areas:
+    "title"
+    "commands"
+    "error"
+    "meta"
+    "intent"
+    "map";
+}
+
+.scenario-workspace .scenario-builder-events {
   grid-template-columns: minmax(0, 1fr) 340px;
   grid-template-areas:
-    "title commands"
+    "title title"
+    "commands commands"
     "error error"
-    "meta side"
     "flow side";
 }
 
 .scenario-workspace .scenario-builder-panel .panel-title {
   grid-area: title;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  align-items: baseline;
+  min-width: 0;
+}
+
+.scenario-workspace .scenario-builder-panel .panel-title > span:first-child {
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  white-space: normal;
+  word-break: keep-all;
 }
 
 .scenario-workspace .builder-command-row {
   grid-area: commands;
-  grid-template-columns: repeat(3, auto);
-  justify-content: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-start;
 }
 
 .scenario-workspace .builder-command-row .primary {
@@ -44,6 +212,72 @@
 .scenario-workspace .builder-meta-grid {
   grid-area: meta;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.scenario-workspace .builder-intent-grid {
+  grid-area: intent;
+}
+
+.scenario-map-stage-grid {
+  grid-area: map;
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) 280px;
+  gap: var(--space-4);
+  align-items: start;
+  min-width: 0;
+}
+
+.scenario-area-summary {
+  align-self: stretch;
+}
+
+.scenario-area-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.scenario-area-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px var(--space-2);
+  align-items: center;
+  width: 100%;
+  padding: var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--surface-panel);
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.scenario-area-row.active {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  background: var(--surface-hover);
+}
+
+.scenario-area-row span,
+.scenario-area-row small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.scenario-area-row small {
+  grid-column: 1;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.scenario-area-row b {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 650;
 }
 
 .scenario-workspace .scenario-flow {
@@ -69,50 +303,71 @@
   font-size: 12px;
 }
 
-@media (max-width: 1180px) {
-  .scenario-workspace {
-    grid-template-columns: minmax(280px, 0.74fr) minmax(520px, 1.26fr);
+@media (max-width: 1240px) {
+  .scenario-workflow-shell {
+    grid-template-columns: minmax(520px, 1fr) 320px;
+  }
+}
+
+@media (max-width: 980px) {
+  .scenario-workflow-shell,
+  .scenario-support-rail,
+  .scenario-map-stage-grid {
+    grid-template-columns: 1fr;
   }
 
-  .scenario-log-rail {
-    grid-column: 1 / -1;
-  }
-
-  .scenario-workspace .scenario-builder-panel {
+  .scenario-workspace .scenario-builder-panel,
+  .scenario-workspace .scenario-builder-events,
+  .scenario-workspace .scenario-builder-map {
     grid-template-columns: 1fr;
     grid-template-areas:
       "title"
       "commands"
       "error"
       "meta"
+      "intent"
+      "map"
       "flow"
       "side";
   }
 
   .scenario-workspace .builder-command-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     justify-content: stretch;
   }
-}
 
-@media (max-width: 820px) {
-  .scenario-workspace,
-  .scenario-log-rail {
-    grid-template-columns: 1fr;
-  }
-
-  .scenario-workspace .builder-meta-grid {
-    grid-template-columns: 1fr;
+  .scenario-workspace .builder-command-row .primary {
+    grid-column: 1 / -1;
   }
 
   .scenario-workspace .scenario-flow {
-    min-height: 430px;
+    min-height: 460px;
   }
 }
 
 @media (max-width: 640px) {
+  .scenario-stepper-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-step-list {
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+    overflow-x: auto;
+  }
+
+  .scenario-stepper-heading {
+    padding-inline: 0;
+  }
+
+  .scenario-status-grid,
+  .scenario-workspace .builder-meta-grid,
+  .scenario-workspace .builder-command-row {
+    grid-template-columns: 1fr;
+  }
+
   .scenario-workspace .flow-node {
     grid-template-columns: minmax(0, 1fr);
-    width: 86px;
+    width: 92px;
     min-height: 52px;
     padding: 7px;
     transform: translate(-25%, -50%);

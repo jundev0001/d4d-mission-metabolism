@@ -19,16 +19,23 @@ export function MapReadout({ dashboard, mapAreas }: MapReadoutProps) {
   return (
     <fieldset className="cop-readout">
       <legend className="sr-only">COP 요약</legend>
-      {mapAreas.map((area) => (
-        <span className="area-coverage-chip" key={area.id}>
-          {area.label}{" "}
-          {missionTypeLabel(
-            dashboard.mission.area_mission_types[area.id] ?? dashboard.mission.mission_type,
-          )}{" "}
-          · P {formatPercent(dashboard.mission.area_priorities[area.id] ?? 0)} · 최저{" "}
-          {formatPercent(minimumCoverageForArea(dashboard, area.id))}
-        </span>
-      ))}
+      {mapAreas.map((area) => {
+        const missionLabel = missionTypeLabel(
+          dashboard.mission.area_mission_types[area.id] ?? dashboard.mission.mission_type,
+        )
+        const priority = formatPercent(dashboard.mission.area_priorities[area.id] ?? 0)
+        const coverage = formatPercent(minimumCoverageForArea(dashboard, area.id))
+        const summary = `${area.label} ${missionLabel} · 우선순위 ${priority} · 최저 ${coverage}`
+        return (
+          <span className="area-coverage-chip" key={area.id} title={summary}>
+            <strong>{area.label}</strong>
+            <span className="area-coverage-mission">{missionLabel}</span>
+            <span className="area-coverage-metrics">
+              우선순위 {priority} · 최저 {coverage}
+            </span>
+          </span>
+        )
+      })}
       <span>EW 최고 {formatPercent(strongestThreat)}</span>
       <span>No-go {noGoSummary}</span>
       <span>중계축 {relayCount}</span>

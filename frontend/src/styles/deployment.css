@@ -5,6 +5,7 @@
 
 .deployment-list {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
 }
 
@@ -66,14 +67,23 @@
 }
 
 .deployment-stepper input {
+  appearance: textfield;
   width: 44px;
   min-width: 0;
+  padding: 0;
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   background: var(--surface-base);
   color: var(--text-primary);
   font: inherit;
+  line-height: 30px;
   text-align: center;
+}
+
+.deployment-stepper input::-webkit-inner-spin-button,
+.deployment-stepper input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
 }
 
 .deployment-actions {
@@ -100,6 +110,12 @@
 
 .deployment-warning {
   color: var(--status-warning);
+}
+
+@media (max-width: 640px) {
+  .deployment-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .deployment-subtitle {
