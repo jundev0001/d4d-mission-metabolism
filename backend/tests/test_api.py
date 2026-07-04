@@ -13,6 +13,8 @@ def test_api_mission_event_decision_and_replay_flow() -> None:
     assert mission_response.status_code == 200
     assert mission_response.json()["mission"]["id"] == "mission-seoul-isr"
     assert mission_response.json()["mission"]["mission_type"] == "area_recon"
+    assert mission_response.json()["assignments"] == []
+    assert {vehicle["area"] for vehicle in mission_response.json()["vehicles"]} == {"GCS"}
 
     mission_types_response = client.get("/mission/types")
     assert mission_types_response.status_code == 200
@@ -40,13 +42,12 @@ def test_api_mission_event_decision_and_replay_flow() -> None:
         "sensor_rover",
         "sensor_rover",
     ]
-    assert [assignment["vehicle_id"] for assignment in deployed_payload["assignments"]] == [
-        "UxV-01",
-        "UxV-02",
-        "UxV-03",
-        "UxV-04",
-        "UxV-05",
-    ]
+    assert deployed_payload["assignments"] == []
+    assert {vehicle["area"] for vehicle in deployed_payload["vehicles"]} == {"GCS"}
+
+    allocation_response = client.post("/allocate")
+    assert allocation_response.status_code == 200
+    assert len(allocation_response.json()["assignments"]) > 0
 
     event_response = client.post(
         "/event/inject",
@@ -79,6 +80,9 @@ def test_api_mission_event_decision_and_replay_flow() -> None:
 
 def test_api_capability_gaps_rank_after_vehicle_loss() -> None:
     client = TestClient(create_app())
+
+    allocation = client.post("/allocate")
+    assert allocation.status_code == 200
 
     healthy = client.post("/capability/gaps")
     assert healthy.status_code == 200
@@ -141,6 +145,14 @@ def test_api_allocate_applies_and_explains() -> None:
     body = response.json()
     assert len(body["assignments"]) > 0
     assert len(body["explanations"]) > 0
+    state = client.get("/").json()
+    assigned_ids = {assignment["vehicle_id"] for assignment in body["assignments"]}
+    assert any(vehicle["area"] == "GCS" for vehicle in state["vehicles"])
+    assert all(
+        vehicle["area"] != "GCS"
+        for vehicle in state["vehicles"]
+        if vehicle["id"] in assigned_ids
+    )
 
 
 def test_api_rejects_empty_deployment() -> None:

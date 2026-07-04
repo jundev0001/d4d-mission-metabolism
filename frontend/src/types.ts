@@ -124,6 +124,7 @@ const MissionSchema = z.object({
   }),
   autonomy_level: Percent,
   area_threats: z.record(z.string(), Percent),
+  area_priorities: z.record(z.string(), Percent),
   no_go_areas: z.array(z.string()),
 })
 

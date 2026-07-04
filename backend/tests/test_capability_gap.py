@@ -1,3 +1,4 @@
+from d4d_mission.allocator import apply_allocation_to_vehicles, plan_allocation
 from d4d_mission.capability import compute_capability_report
 from d4d_mission.capability_gap import MIN_DEFICIT_RATIO, analyze_capability_gaps, top_gap
 from d4d_mission.models import DashboardState
@@ -5,8 +6,15 @@ from d4d_mission.scenario import create_initial_snapshot
 from d4d_mission.types import CapabilityName, VehicleStatus
 
 
+def _allocated_snapshot(seed: int = 13) -> DashboardState:
+    snapshot = create_initial_snapshot(seed=seed)
+    plan = plan_allocation(vehicles=snapshot.vehicles, mission=snapshot.mission)
+    vehicles = apply_allocation_to_vehicles(snapshot.vehicles, plan.assignments)
+    return snapshot.model_copy(update={"vehicles": vehicles, "assignments": plan.assignments})
+
+
 def _snapshot_with_lost(*vehicle_ids: str) -> DashboardState:
-    snapshot = create_initial_snapshot(seed=13)
+    snapshot = _allocated_snapshot(seed=13)
     lost = set(vehicle_ids)
     vehicles = tuple(
         vehicle.model_copy(update={"status": VehicleStatus.LOST}) if vehicle.id in lost else vehicle
@@ -34,7 +42,7 @@ def test_gaps_are_ranked_by_priority_and_internally_consistent() -> None:
 
 
 def test_gap_set_and_ratio_match_capability_report() -> None:
-    for snapshot in (create_initial_snapshot(seed=11), _snapshot_with_lost("UxV-04", "UxV-05")):
+    for snapshot in (_allocated_snapshot(seed=11), _snapshot_with_lost("UxV-04", "UxV-05")):
         report = compute_capability_report(
             vehicles=snapshot.vehicles,
             mission=snapshot.mission,
@@ -59,7 +67,7 @@ def test_gap_set_and_ratio_match_capability_report() -> None:
 
 
 def test_losing_relay_vehicle_surfaces_b_relay_gap() -> None:
-    healthy = create_initial_snapshot(seed=11)
+    healthy = _allocated_snapshot(seed=11)
     healthy_gaps = analyze_capability_gaps(
         vehicles=healthy.vehicles,
         mission=healthy.mission,

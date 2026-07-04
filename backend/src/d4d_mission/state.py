@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, override
 if TYPE_CHECKING:
     from pathlib import Path
 
-from d4d_mission.allocator import plan_allocation
+from d4d_mission.allocator import apply_allocation_to_vehicles, plan_allocation
 from d4d_mission.blackbox import JsonlBlackBox
 from d4d_mission.capability_gap import analyze_capability_gaps
 from d4d_mission.deployment import DeploymentCount, DeploymentError, apply_fleet_deployment
@@ -119,8 +119,20 @@ class MissionRuntime:
 
     def allocation(self) -> AllocationResponse:
         plan = plan_allocation(vehicles=self._snapshot.vehicles, mission=self._snapshot.mission)
+        vehicles = apply_allocation_to_vehicles(
+            vehicles=self._snapshot.vehicles,
+            assignments=plan.assignments,
+        )
         self._snapshot = refresh_snapshot(
-            snapshot=self._snapshot.model_copy(update={"assignments": plan.assignments}),
+            snapshot=self._snapshot.model_copy(
+                update={"vehicles": vehicles, "assignments": plan.assignments},
+            ),
+        )
+        self._blackbox.record_model(
+            scenario_time=self._snapshot.scenario_time,
+            kind="decision",
+            summary="approved optimized allocation from GCS",
+            model=plan,
         )
         return plan
 

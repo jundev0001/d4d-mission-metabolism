@@ -1,8 +1,9 @@
+from d4d_mission.allocator import apply_allocation_to_vehicles, plan_allocation
 from d4d_mission.capability import effective_capability
 from d4d_mission.immune import decide_recommendation
 from d4d_mission.immune_card_helpers import best_vehicle_for, card_action, make_card
 from d4d_mission.immune_cards import build_recommendation
-from d4d_mission.models import CapabilityGap, DecisionRequest, EventRequest
+from d4d_mission.models import CapabilityGap, DashboardState, DecisionRequest, EventRequest
 from d4d_mission.scenario import apply_event_to_snapshot, create_initial_snapshot
 from d4d_mission.types import (
     CAPABILITY_NAMES,
@@ -28,15 +29,23 @@ def _gap(ratio: float) -> CapabilityGap:
     )
 
 
+def _allocated_snapshot(seed: int = 11) -> DashboardState:
+    snapshot = create_initial_snapshot(seed=seed)
+    plan = plan_allocation(vehicles=snapshot.vehicles, mission=snapshot.mission)
+    vehicles = apply_allocation_to_vehicles(snapshot.vehicles, plan.assignments)
+    return snapshot.model_copy(update={"vehicles": vehicles, "assignments": plan.assignments})
+
+
 def test_card_targets_failed_vehicle_area_not_hardcoded_b() -> None:
-    snapshot = create_initial_snapshot(seed=11)
+    snapshot = _allocated_snapshot(seed=11)
     event = EventRequest(event_type=EventType.BATTERY_DROP, target="UxV-05", severity=0.6)
+    target_area = next(vehicle.area for vehicle in snapshot.vehicles if vehicle.id == event.target)
 
     card = build_recommendation(snapshot=snapshot, event=event)
 
     areas = {action.area for action in card.actions if action.area is not None}
-    assert "C" in areas
-    assert "B" not in areas
+    assert target_area in areas
+    assert all(area == target_area for area in areas)
 
 
 def test_best_vehicle_uses_effective_not_raw_capability() -> None:
@@ -57,7 +66,7 @@ def test_best_vehicle_uses_effective_not_raw_capability() -> None:
 
 
 def test_card_excludes_failed_vehicle_from_actions() -> None:
-    snapshot = create_initial_snapshot(seed=11)
+    snapshot = _allocated_snapshot(seed=11)
     event = EventRequest(event_type=EventType.VEHICLE_LOST, target="UxV-04", severity=0.8)
 
     card = build_recommendation(snapshot=snapshot, event=event)
@@ -66,7 +75,7 @@ def test_card_excludes_failed_vehicle_from_actions() -> None:
 
 
 def test_multi_action_card_does_not_double_book_a_vehicle() -> None:
-    snapshot = create_initial_snapshot(seed=11)
+    snapshot = _allocated_snapshot(seed=11)
     event = EventRequest(event_type=EventType.COMM_JAM, target="A", severity=0.5)
 
     card = build_recommendation(snapshot=snapshot, event=event)
@@ -90,8 +99,9 @@ def test_expected_effect_scales_with_gap_severity() -> None:
 
 
 def test_replacement_role_and_area_follow_target_area() -> None:
-    snapshot = create_initial_snapshot(seed=11)
+    snapshot = _allocated_snapshot(seed=11)
     event = EventRequest(event_type=EventType.VEHICLE_LOST, target="UxV-05", severity=0.8)
+    target_area = next(vehicle.area for vehicle in snapshot.vehicles if vehicle.id == event.target)
     card = build_recommendation(snapshot=snapshot, event=event)
     reserve_id = next(
         action.vehicle_id for action in card.actions if action.action == MicroActionType.REPLACE
@@ -105,6 +115,6 @@ def test_replacement_role_and_area_follow_target_area() -> None:
     reserve = next(vehicle for vehicle in updated.vehicles if vehicle.id == reserve_id)
     dominant = max(CAPABILITY_NAMES, key=effective_capability(reserve).value_for)
 
-    assert reserve.area == "C"
+    assert reserve.area == target_area
     assert reserve.status == VehicleStatus.ACTIVE
     assert reserve.role == dominant

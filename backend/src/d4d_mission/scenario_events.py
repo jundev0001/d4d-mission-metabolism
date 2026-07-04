@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import assert_never
 
 from d4d_mission.capability import clamp01
 from d4d_mission.models import CapabilityDemand, EventRequest, HealthState, Mission, Vehicle
@@ -185,8 +184,6 @@ def apply_event_to_mission(mission: Mission, event: EventRequest) -> Mission:
             | EventType.ASSET_ADDED
         ):
             return mission
-        case unreachable:
-            assert_never(unreachable)
     return mission.model_copy(update=updates)
 
 

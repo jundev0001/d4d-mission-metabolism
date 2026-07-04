@@ -1,9 +1,10 @@
+from d4d_mission.allocator import apply_allocation_to_vehicles, plan_allocation
 from d4d_mission.capability import compute_capability_report
 from d4d_mission.catalog import mission_templates, vehicle_type_profiles
 from d4d_mission.immune import decide_recommendation
 from d4d_mission.immune_cards import build_recommendation
 from d4d_mission.metabolism import _relay_redundancy, evaluate_metrics
-from d4d_mission.models import DecisionRequest, EventRequest
+from d4d_mission.models import DashboardState, DecisionRequest, EventRequest
 from d4d_mission.scenario import apply_event_to_snapshot, create_initial_snapshot
 from d4d_mission.types import (
     DEPLOYABLE_VEHICLE_TYPES,
@@ -12,6 +13,13 @@ from d4d_mission.types import (
     EventType,
     MicroActionType,
 )
+
+
+def _allocated_snapshot(seed: int) -> DashboardState:
+    snapshot = create_initial_snapshot(seed=seed)
+    plan = plan_allocation(vehicles=snapshot.vehicles, mission=snapshot.mission)
+    vehicles = apply_allocation_to_vehicles(snapshot.vehicles, plan.assignments)
+    return snapshot.model_copy(update={"vehicles": vehicles, "assignments": plan.assignments})
 
 
 def test_catalog_contains_mission_and_vehicle_type_vectors() -> None:
@@ -32,10 +40,12 @@ def test_default_scenario_uses_new_catalog_types() -> None:
 
     assert snapshot.mission.mission_type == MISSION_TYPES[0]
     assert vehicle_types.issubset(set(DEPLOYABLE_VEHICLE_TYPES))
+    assert snapshot.assignments == ()
+    assert {vehicle.area for vehicle in snapshot.vehicles} == {"GCS"}
 
 
 def test_capability_availability_decreases_when_health_degrades() -> None:
-    snapshot = create_initial_snapshot(seed=7)
+    snapshot = _allocated_snapshot(seed=7)
     healthy_report = compute_capability_report(
         vehicles=snapshot.vehicles,
         mission=snapshot.mission,
@@ -57,8 +67,10 @@ def test_capability_availability_decreases_when_health_degrades() -> None:
 
 
 def test_mcc_caps_at_one_and_reports_deficits() -> None:
-    snapshot = create_initial_snapshot(seed=11)
+    staged = create_initial_snapshot(seed=11)
+    assert staged.capability_report.deficit_score == 1
 
+    snapshot = _allocated_snapshot(seed=11)
     report = compute_capability_report(
         vehicles=snapshot.vehicles,
         mission=snapshot.mission,
@@ -67,11 +79,11 @@ def test_mcc_caps_at_one_and_reports_deficits() -> None:
 
     assert report.overall_mcc <= 1
     assert report.area_reports["B"].coverage["relay"] <= 1
-    assert report.area_reports["B"].deficit["relay"] == 0
+    assert report.overall_mcc >= snapshot.mission.constraints.target_mcc
 
 
 def test_relay_redundancy_penalizes_ew_pressure_outside_b_area() -> None:
-    snapshot = create_initial_snapshot(seed=11)
+    snapshot = _allocated_snapshot(seed=11)
     initial = _relay_redundancy(snapshot)
     mission = snapshot.mission.model_copy(update={"area_threats": {"A": 0.08, "B": 0.12, "C": 1.0}})
     stressed = snapshot.model_copy(update={"mission": mission})
@@ -80,7 +92,7 @@ def test_relay_redundancy_penalizes_ew_pressure_outside_b_area() -> None:
 
 
 def test_event_recommendation_and_approval_recover_collapse_and_debt() -> None:
-    snapshot = create_initial_snapshot(seed=13)
+    snapshot = _allocated_snapshot(seed=13)
     initial = evaluate_metrics(snapshot=snapshot, pending_cards=0)
     event = EventRequest(event_type=EventType.COMM_JAM, target="B", severity=0.82)
     card = build_recommendation(snapshot=snapshot, event=event)
