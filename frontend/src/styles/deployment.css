@@ -78,9 +78,24 @@
 
 .deployment-actions {
   display: flex;
+  flex-direction: column;
   gap: var(--space-2);
-  align-items: center;
-  justify-content: space-between;
+  align-items: stretch;
+}
+
+.deployment-actions > .caption {
+  white-space: nowrap;
+}
+
+.deployment-command-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.deployment-command-buttons .button {
+  white-space: nowrap;
 }
 
 .deployment-warning {

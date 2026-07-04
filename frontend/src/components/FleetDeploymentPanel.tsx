@@ -1,4 +1,4 @@
-import { Minus, Plus, Send } from "lucide-react"
+import { Minus, Plus, Route, Send } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { capabilityLabel } from "../format"
 import { mapAssetIconHref } from "../mapAssetIcons"
@@ -16,6 +16,7 @@ const MIN_DEPLOYED_ASSETS = 5
 const MAX_COUNT_PER_TYPE = 12
 
 export function FleetDeploymentPanel() {
+  const allocateMission = useMissionStore((state) => state.allocateMission)
   const dashboard = useMissionStore((state) => state.dashboard)
   const deployFleet = useMissionStore((state) => state.deployFleet)
   const isRunningDemo = useMissionStore((state) => state.isRunningDemo)
@@ -28,6 +29,7 @@ export function FleetDeploymentPanel() {
   const [draft, setDraft] = useState<readonly FleetDeploymentItem[]>(baselineDraft)
   const totalCount = draft.reduce((sum, item) => sum + item.count, 0)
   const canDeploy = totalCount >= MIN_DEPLOYED_ASSETS && !isRunningDemo
+  const canAllocate = dashboard !== null && canDeploy
   const canRemove = totalCount > MIN_DEPLOYED_ASSETS && !isRunningDemo
 
   useEffect(() => {
@@ -71,15 +73,26 @@ export function FleetDeploymentPanel() {
         <span className={canDeploy ? "caption" : "caption deployment-warning"}>
           최소 {MIN_DEPLOYED_ASSETS}대 이상
         </span>
-        <button
-          className="button primary"
-          type="button"
-          disabled={!canDeploy}
-          onClick={() => void deployFleet(compactDeployment(draft))}
-        >
-          <Send size={14} />
-          맵에 배치
-        </button>
+        <span className="deployment-command-buttons">
+          <button
+            className="button"
+            type="button"
+            disabled={!canDeploy}
+            onClick={() => void deployFleet(compactDeployment(draft))}
+          >
+            <Send size={14} />
+            맵에 배치
+          </button>
+          <button
+            className="button primary"
+            type="button"
+            disabled={!canAllocate}
+            onClick={() => void allocateMission()}
+          >
+            <Route size={14} />
+            편성 승인
+          </button>
+        </span>
       </div>
     </section>
   )

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { EMPTY_ASSET_POSITIONS, useAnimatedAssetPositions } from "../mapAssetAnimation"
 import { displayPositionsForVehicles } from "../mapAssetDisplay"
 import { minimumCoverageForArea } from "../mapCoverage"
 import {
@@ -35,6 +36,11 @@ export function MapView() {
   const mapAreas = useMissionStore((state) => state.customScenario.map.areas)
   const mapName = useMissionStore((state) => state.customScenario.map.name)
   const profiles = useMissionStore((state) => state.vehicleTypeProfiles)
+  const targetAssetDisplayPositions = useMemo(
+    () => (dashboard ? displayPositionsForVehicles(dashboard.vehicles) : EMPTY_ASSET_POSITIONS),
+    [dashboard],
+  )
+  const assetDisplayPositions = useAnimatedAssetPositions(targetAssetDisplayPositions)
 
   useEffect(() => {
     const map = mapRef.current
@@ -66,7 +72,6 @@ export function MapView() {
   const realAssets = dashboard.vehicles.filter((vehicle) => !vehicle.synthetic).length
   const syntheticAssets = dashboard.vehicles.length - realAssets
   const overlayScale = overlayScaleForViewBox(viewBox)
-  const assetDisplayPositions = displayPositionsForVehicles(dashboard.vehicles)
 
   const openAssetMenu = (request: AssetMenuRequest) => {
     setActiveAssetId(request.vehicle.id)

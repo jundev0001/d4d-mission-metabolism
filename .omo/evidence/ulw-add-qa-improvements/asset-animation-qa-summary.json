@@ -1,0 +1,29 @@
+{
+  "samples": {
+    "beforeTransform": "translate(50 70.1) scale(1)",
+    "firstFrameTransform": "translate(50.011 70.056) scale(1)",
+    "midFrameTransform": "translate(51.855 62.509) scale(1)",
+    "settledTransform": "translate(59.849999999999994 29.800000000000004) scale(1)"
+  },
+  "screenshot": "screenshots/06-desktop-allocation-motion-midframe.png",
+  "vehicleId": "UxV-01",
+  "before": {
+    "x": 50,
+    "y": 70.1
+  },
+  "first": {
+    "x": 50.011,
+    "y": 70.056
+  },
+  "firstToMidDistance": 7.7690118419268686,
+  "mid": {
+    "x": 51.855,
+    "y": 62.509
+  },
+  "midToSettledDistance": 33.671927565852236,
+  "settled": {
+    "x": 59.849999999999994,
+    "y": 29.800000000000004
+  },
+  "totalDistance": 41.486292917058755
+}

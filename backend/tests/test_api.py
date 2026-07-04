@@ -106,6 +106,13 @@ def test_api_mission_event_decision_and_replay_flow() -> None:
     assert deployed_payload.assignments == ()
     assert {vehicle.area for vehicle in deployed_payload.vehicles} == {"GCS"}
 
+    premature_event = client.post(
+        "/event/inject",
+        json={"event_type": EventType.COMM_JAM, "target": "B", "severity": 0.8},
+    )
+    assert premature_event.status_code == 409
+    assert "initial allocation approval" in premature_event.json()["detail"]
+
     allocation_response = client.post("/allocate")
     assert allocation_response.status_code == 200
     assert len(response_model(allocation_response, AllocationResponse).assignments) > 0
@@ -174,6 +181,9 @@ def test_api_rejects_invalid_event_type_and_unknown_vehicle() -> None:
     )
     assert invalid_type.status_code == 422
 
+    allocation = client.post("/allocate")
+    assert allocation.status_code == 200
+
     unknown_vehicle = client.post(
         "/event/inject",
         json={"event_type": EventType.BATTERY_DROP, "target": "UxV-99", "severity": 0.7},
@@ -183,6 +193,9 @@ def test_api_rejects_invalid_event_type_and_unknown_vehicle() -> None:
 
 def test_api_accepts_new_tactical_immune_event_targets() -> None:
     client = make_client()
+
+    allocation = client.post("/allocate")
+    assert allocation.status_code == 200
 
     area_event = client.post(
         "/event/inject",
@@ -291,6 +304,8 @@ def test_api_configures_custom_areas_before_allocation() -> None:
 
 def test_api_event_injection_does_not_count_as_operator_action() -> None:
     client = make_client()
+    allocation = client.post("/allocate")
+    assert allocation.status_code == 200
     initial_actions = response_model(client.get("/"), DashboardState).metrics.operator_actions
 
     event_response = client.post(
@@ -317,6 +332,8 @@ def test_api_event_injection_does_not_count_as_operator_action() -> None:
 
 def test_api_keeps_paired_baseline_after_assisted_decision() -> None:
     client = make_client()
+    allocation = client.post("/allocate")
+    assert allocation.status_code == 200
 
     event_response = client.post(
         "/event/inject",

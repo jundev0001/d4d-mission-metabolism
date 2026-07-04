@@ -29,17 +29,21 @@ const VEHICLE_TARGET_EVENTS: readonly EventType[] = [
 export function EventControls() {
   const dashboard = useMissionStore((state) => state.dashboard)
   const injectEvent = useMissionStore((state) => state.injectEvent)
+  const isRunningDemo = useMissionStore((state) => state.isRunningDemo)
   const [eventType, setEventType] = useState<EventType>("comm_jam")
   const [target, setTarget] = useState("B")
   const [severity, setSeverity] = useState(0.72)
   const targetOptions = targetsForEventType(eventType, dashboard)
   const selectedTarget = targetOptions.includes(target) ? target : (targetOptions.at(0) ?? "B")
+  const canInject = (dashboard?.assignments.length ?? 0) > 0 && !isRunningDemo
 
   return (
     <section className="panel event-panel">
       <div className="panel-title">
         <span>Inject event</span>
-        <span className="caption">Adaptive response</span>
+        <span className="caption">
+          {canInject ? "Adaptive response" : "편성 승인 후 이벤트 주입 가능"}
+        </span>
       </div>
       <div className="event-form">
         <label className="builder-field">
@@ -85,6 +89,7 @@ export function EventControls() {
         <button
           className="button primary"
           type="button"
+          disabled={!canInject}
           onClick={() =>
             void injectEvent({
               event_type: eventType,

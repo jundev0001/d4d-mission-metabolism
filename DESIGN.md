@@ -152,7 +152,7 @@ All spacing derives from a 4px base.
 - **Motion**: no decorative animation.
 
 ### Scenario Builder
-- **Structure**: dedicated custom workspace tab, map name controls, wide flow canvas, draggable event nodes, selected-node editor, graph editor, edge list, import/export/test commands.
+- **Structure**: lives inside the 시나리오 workspace with fleet formation controls, event injection, map name controls, wide flow canvas, draggable event nodes, selected-node editor, graph editor, edge list, import/export/test commands, and the black box log nearby.
 - **Variants**: default scenario, imported scenario, invalid import, connection mode, parallel event stage.
 - **Spacing**: --space-3 between command clusters, --space-2 inside node controls, compact edge rows in the side stack.
 - **States**: selected node uses accent border, connection source uses info outline, valid connection targets use dashed borders, dragging uses elevated surface and cursor state, import/graph errors use danger text.
@@ -160,7 +160,8 @@ All spacing derives from a 4px base.
 - **Motion**: only border/background changes on selection, connection mode, and hover.
 
 ### Workspace Tabs
-- **Structure**: two-button segmented control below mission metrics: 임무 판단 and 커스텀 빌더.
+- **Structure**: two-button segmented control below mission metrics: 임무 판단 and 시나리오.
+- **Boundary**: 임무 판단 keeps only COP, 판단 대기열, 기준 대비 지원, and 능력 예산. Scenario design, map editing, fleet deployment, event injection, and calculation log stay in 시나리오.
 - **Variants**: selected, default.
 - **Spacing**: --space-2 button gap, --space-3 horizontal padding.
 - **States**: selected uses accent border and elevated surface; focus uses the command button focus ring.

@@ -159,6 +159,9 @@ def create_app() -> FastAPI:
 
     @app.post("/event/inject", response_model=DashboardState)
     async def event_inject(event: EventRequest) -> DashboardState:
+        if len(runtime.snapshot.assignments) == 0:
+            detail = "initial allocation approval required before event injection"
+            raise HTTPException(status_code=409, detail=detail)
         try:
             return runtime.inject_event(event=event)
         except (UnknownTargetError, RecommendationNotFoundError, ManualActionError) as error:

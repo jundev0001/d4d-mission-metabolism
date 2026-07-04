@@ -39,7 +39,7 @@
 .mission-bar,
 .metric-strip,
 .workspace,
-.custom-workspace {
+.scenario-workspace {
   max-width: 1480px;
   margin: 0 auto;
 }

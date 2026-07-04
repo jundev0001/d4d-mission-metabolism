@@ -1,0 +1,81 @@
+{
+  "checkedAt": "2026-07-04T19:13:05.071Z",
+  "assertions": [
+    {
+      "name": "mission tab has COP",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "mission tab hides event controls",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "mission tab hides builder panel",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "mission tab hides black box log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "scenario tab shows event controls",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "scenario tab shows fleet formation",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "scenario tab shows custom builder",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "scenario tab shows calculation log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "inject locked before allocation",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "lock caption visible",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "inject enabled after allocation approval",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "event injection keeps calculation log available",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "allocation precedes live event state",
+      "passed": true,
+      "detail": "{\"assignments\":11,\"events\":1,\"nonGcs\":11}"
+    },
+    {
+      "name": "mobile scenario workspace fits viewport width",
+      "passed": true,
+      "detail": "{\"box\":{\"x\":12,\"y\":869.046875,\"width\":366,\"height\":4412.0625},\"viewport\":{\"width\":390,\"height\":844}}"
+    }
+  ],
+  "screenshots": [
+    "C:\\Users\\Jun\\Documents\\D4D\\screenshots\\11-desktop-mission-judgment-restarted.png",
+    "C:\\Users\\Jun\\Documents\\D4D\\screenshots\\12-desktop-scenario-before-allocation-restarted.png",
+    "C:\\Users\\Jun\\Documents\\D4D\\screenshots\\13-desktop-scenario-after-allocation-restarted.png",
+    "C:\\Users\\Jun\\Documents\\D4D\\screenshots\\14-mobile-scenario-restarted.png"
+  ]
+}

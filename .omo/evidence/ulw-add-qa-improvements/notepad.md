@@ -40,6 +40,8 @@ HEAVY. The request changes cross-layer mission behavior, domain state, frontend 
 - Added frontend `계산 로그` tab backed by black box replay parsing, with MCC, baseline MCC, collapse probability, autonomy debt, CCR, assigned assets, and area MCC detail.
 - Added COP area mission labels, priority/threat readouts, subtle active mission paths, and animated approved/manual recommendation action paths.
 - Added per-vehicle battery/link/nav/sensor/status controls in the fleet panel and wired them to the new tune API.
+- Added client-side COP asset position interpolation so UxV glyphs and info cards move between old and new coordinates instead of teleporting when backend state changes.
+- Added a `편성 승인` control to the visible `임무 판단` UxV panel so the operator can approve optimized A/B/C allocation while the COP remains on screen.
 
 ## Gate Results
 
@@ -54,6 +56,8 @@ HEAVY. The request changes cross-layer mission behavior, domain state, frontend 
 - Backend ruff: passed.
 - Backend pytest: `45 passed, 1 warning`.
 - Backend basedpyright: failed with existing repository-wide Pydantic member/type inference errors (`593 errors`), including many pre-existing `model_copy`/model member unknown-type reports outside this change scope.
+- Follow-up animation targeted tests after movement fix: `3 files, 13 tests passed`.
+- Follow-up animation frontend lint/typecheck/build: passed.
 
 ## Post-Review Fixes
 
@@ -80,12 +84,15 @@ HEAVY. The request changes cross-layer mission behavior, domain state, frontend 
   - frontend: `http://127.0.0.1:4173`
 - Browser QA script: `.omo/evidence/ulw-add-qa-improvements/browser-qa.mjs`.
 - Browser QA summary: `.omo/evidence/ulw-add-qa-improvements/browser-qa-summary.json`.
+- Asset animation QA script: `.omo/evidence/ulw-add-qa-improvements/asset-animation-qa.mjs`.
+- Asset animation QA summary: `.omo/evidence/ulw-add-qa-improvements/asset-animation-qa-summary.json`.
 - Screenshots:
   - `.omo/evidence/ulw-add-qa-improvements/screenshots/01-desktop-initial-gcs.png`
   - `.omo/evidence/ulw-add-qa-improvements/screenshots/02-desktop-allocation-paths.png`
   - `.omo/evidence/ulw-add-qa-improvements/screenshots/03-desktop-event-approved-paths.png`
   - `.omo/evidence/ulw-add-qa-improvements/screenshots/04-desktop-log-and-tune.png`
   - `.omo/evidence/ulw-add-qa-improvements/screenshots/05-mobile-mission-view.png`
+  - `.omo/evidence/ulw-add-qa-improvements/screenshots/06-desktop-allocation-motion-midframe.png`
 - Browser QA result:
   - initial all GCS: true
   - final MCC: 0.874
@@ -93,4 +100,13 @@ HEAVY. The request changes cross-layer mission behavior, domain state, frontend 
   - final autonomy debt: 25.1
   - replay entries: 32
   - calculation entries: 13
+- Asset animation QA result:
+  - vehicle: `UxV-01`
+  - before transform: `translate(50 70.1) scale(1)`
+  - first animation frame: `translate(50.011 70.056) scale(1)`
+  - 300ms mid frame: `translate(51.855 62.509) scale(1)`
+  - settled frame: `translate(59.849999999999994 29.800000000000004) scale(1)`
+  - total sampled movement: `41.486292917058755`
+  - first-to-mid movement: `7.7690118419268686`
+  - mid-to-settled movement: `33.671927565852236`
 - Read-only QA executor added `.omo/evidence/ulw-add-qa-improvements/read-only-audit-20260705/manualQa.md` and blocked only the fresh mutation reproduction because it was instructed not to mutate live state. The mutating path is covered by the saved Playwright QA script and screenshots above.

@@ -12,16 +12,15 @@ import { ScenarioBuilderPanel } from "./components/ScenarioBuilderPanel"
 import { useMissionStore } from "./store"
 import "./App.css"
 
-type WorkspaceView = "mission" | "log" | "custom"
+type WorkspaceView = "mission" | "scenario"
 
 const WORKSPACE_TABS: readonly {
   readonly view: WorkspaceView
   readonly label: string
   readonly caption: string
 }[] = [
-  { view: "mission", label: "임무 판단", caption: "실시간 COP" },
-  { view: "log", label: "계산 로그", caption: "산출 근거" },
-  { view: "custom", label: "커스텀 빌더", caption: "맵/시나리오 제작" },
+  { view: "mission", label: "임무 판단", caption: "실전 판단면" },
+  { view: "scenario", label: "시나리오", caption: "설계/편성/로그" },
 ] as const
 
 export function App() {
@@ -54,8 +53,7 @@ export function App() {
       <MetricStrip />
       <WorkspaceTabs activeView={workspaceView} onViewChange={setWorkspaceView} />
       {workspaceView === "mission" ? <MissionWorkspace /> : null}
-      {workspaceView === "log" ? <LogWorkspace /> : null}
-      {workspaceView === "custom" ? <CustomWorkspace /> : null}
+      {workspaceView === "scenario" ? <ScenarioWorkspace /> : null}
     </main>
   )
 }
@@ -90,8 +88,6 @@ function MissionWorkspace() {
   return (
     <section className="workspace" aria-label="임무 판단 작업면">
       <aside className="left-rail">
-        <EventControls />
-        <FleetDeploymentPanel />
         <CapabilityPanel />
       </aside>
       <section className="center-stage">
@@ -100,24 +96,24 @@ function MissionWorkspace() {
       </section>
       <aside className="right-rail">
         <RecommendationPanel />
-        <BlackBoxPanel />
       </aside>
     </section>
   )
 }
 
-function CustomWorkspace() {
+function ScenarioWorkspace() {
   return (
-    <section className="custom-workspace" aria-label="커스텀 시나리오 작업면">
-      <ScenarioBuilderPanel />
-    </section>
-  )
-}
-
-function LogWorkspace() {
-  return (
-    <section className="log-workspace" aria-label="계산 로그 작업면">
-      <BlackBoxPanel />
+    <section className="scenario-workspace" aria-label="시나리오 작업면">
+      <aside className="scenario-rail">
+        <FleetDeploymentPanel />
+        <EventControls />
+      </aside>
+      <section className="scenario-builder-stage">
+        <ScenarioBuilderPanel />
+      </section>
+      <aside className="scenario-log-rail">
+        <BlackBoxPanel />
+      </aside>
     </section>
   )
 }

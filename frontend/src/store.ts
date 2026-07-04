@@ -144,6 +144,10 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
   },
 
   injectEvent: async (event) => {
+    if ((get().dashboard?.assignments.length ?? 0) === 0) {
+      set({ lastError: "편성 승인 후 이벤트 주입이 가능합니다." })
+      return
+    }
     try {
       const dashboard = await postEvent(event)
       const replay = await fetchReplay()
@@ -170,6 +174,7 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
     set({ isRunningDemo: true, lastError: null })
     try {
       await get().reset()
+      await get().allocateMission()
       await SCRIPTED_EVENTS.reduce(
         (sequence, event) => sequence.then(() => injectDemoEvent(event, get)),
         Promise.resolve(),

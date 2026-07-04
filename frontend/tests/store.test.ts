@@ -141,6 +141,45 @@ describe("mission store", () => {
     )
   })
 
+  it("Given no approved allocation When injecting an event Then the store blocks the event", async () => {
+    const dashboard = { ...makeDashboardState(), assignments: [] }
+    useMissionStore.setState({ dashboard })
+
+    await useMissionStore.getState().injectEvent({
+      event_type: "comm_jam",
+      target: "B",
+      severity: 0.82,
+    })
+
+    expect(apiMocks.injectEvent).not.toHaveBeenCalled()
+    expect(useMissionStore.getState().dashboard).toBe(dashboard)
+    expect(useMissionStore.getState().lastError).toBe("편성 승인 후 이벤트 주입이 가능합니다.")
+  })
+
+  it("Given a scripted demo When it starts Then allocation is approved before events", async () => {
+    vi.useFakeTimers()
+    const resetDashboard = { ...makeDashboardState(), assignments: [] }
+    const allocatedDashboard = makeDashboardState()
+    apiMocks.resetMission.mockResolvedValue(resetDashboard)
+    apiMocks.allocateMission.mockResolvedValue(allocatedDashboard)
+    apiMocks.injectEvent.mockResolvedValue(allocatedDashboard)
+
+    const run = useMissionStore.getState().runScriptedDemo()
+    await vi.advanceTimersByTimeAsync(2200)
+    await run
+
+    expect(apiMocks.resetMission).toHaveBeenCalledWith(42)
+    expect(apiMocks.allocateMission).toHaveBeenCalledTimes(1)
+    expect(apiMocks.injectEvent).toHaveBeenCalledTimes(4)
+    expect(apiMocks.resetMission.mock.invocationCallOrder[0]).toBeLessThan(
+      apiMocks.allocateMission.mock.invocationCallOrder[0] ?? 0,
+    )
+    expect(apiMocks.allocateMission.mock.invocationCallOrder[0]).toBeLessThan(
+      apiMocks.injectEvent.mock.invocationCallOrder[0] ?? 0,
+    )
+    vi.useRealTimers()
+  })
+
   it("Given live websocket state When a valid snapshot arrives Then the dashboard updates and closes cleanly", () => {
     const dashboard = makeDashboardState()
 

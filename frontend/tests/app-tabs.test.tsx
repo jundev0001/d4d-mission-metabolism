@@ -65,23 +65,32 @@ vi.mock("../src/components/ScenarioBuilderPanel", () => ({
 }))
 
 describe("workspace tabs", () => {
-  it("Given the dashboard When selecting the custom builder tab Then the custom workspace replaces the mission workspace", () => {
+  it("Given the dashboard When viewing mission judgment Then only operational decision surfaces remain", () => {
     render(<App />)
 
     expect(screen.getByRole("region", { name: "임무 판단 작업면" })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: "커스텀 빌더" }))
+    expect(screen.getByText("지도 패널")).toBeInTheDocument()
+    expect(screen.getByText("권고 패널")).toBeInTheDocument()
+    expect(screen.getByText("평가 패널")).toBeInTheDocument()
+    expect(screen.getByText("능력 패널")).toBeInTheDocument()
 
-    expect(screen.getByRole("region", { name: "커스텀 시나리오 작업면" })).toBeInTheDocument()
-    expect(screen.getByText("커스텀 빌더 패널")).toBeInTheDocument()
     expect(screen.queryByText("이벤트 컨트롤")).not.toBeInTheDocument()
+    expect(screen.queryByText("배치 패널")).not.toBeInTheDocument()
+    expect(screen.queryByText("블랙박스 패널")).not.toBeInTheDocument()
+    expect(screen.queryByText("커스텀 빌더 패널")).not.toBeInTheDocument()
   })
 
-  it("Given the dashboard When selecting the log tab Then calculation logs replace the mission workspace", () => {
+  it("Given the dashboard When selecting scenario Then planning, map editing, events, and logs are consolidated", () => {
     render(<App />)
 
-    fireEvent.click(screen.getByRole("button", { name: "계산 로그" }))
+    expect(screen.queryByRole("button", { name: "계산 로그" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "커스텀 빌더" })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "시나리오" }))
 
-    expect(screen.getByRole("region", { name: "계산 로그 작업면" })).toBeInTheDocument()
+    expect(screen.getByRole("region", { name: "시나리오 작업면" })).toBeInTheDocument()
+    expect(screen.getByText("이벤트 컨트롤")).toBeInTheDocument()
+    expect(screen.getByText("배치 패널")).toBeInTheDocument()
+    expect(screen.getByText("커스텀 빌더 패널")).toBeInTheDocument()
     expect(screen.getByText("블랙박스 패널")).toBeInTheDocument()
     expect(screen.queryByText("지도 패널")).not.toBeInTheDocument()
   })

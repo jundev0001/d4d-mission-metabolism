@@ -8,6 +8,7 @@ import type { VehicleTypeProfile } from "../src/vehicleDeployment"
 import { makeDashboardState } from "./fixtures"
 
 const apiMocks = vi.hoisted(() => ({
+  allocateMission: vi.fn(),
   deployFleet: vi.fn(),
   fetchReplay: vi.fn(),
   tuneVehicle: vi.fn(),
@@ -15,6 +16,7 @@ const apiMocks = vi.hoisted(() => ({
 
 vi.mock("../src/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/api")>()),
+  allocateMission: apiMocks.allocateMission,
   deployFleet: apiMocks.deployFleet,
   fetchReplay: apiMocks.fetchReplay,
   tuneVehicle: apiMocks.tuneVehicle,
@@ -25,6 +27,7 @@ describe("fleet deployment panel", () => {
     vi.resetAllMocks()
     apiMocks.fetchReplay.mockResolvedValue({ entries: [] })
     const dashboard = makeDeploymentDashboard()
+    apiMocks.allocateMission.mockResolvedValue(dashboard)
     apiMocks.deployFleet.mockResolvedValue(dashboard)
     apiMocks.tuneVehicle.mockResolvedValue(dashboard)
     useMissionStore.setState({
@@ -63,6 +66,16 @@ describe("fleet deployment panel", () => {
     expect(deployedAssetIcons).toHaveLength(6)
     expect(deploymentIcons[0]).toHaveAttribute("src", mapAssetIconHref("fixedwing_survey_uav"))
     expect(deployedAssetIcons[3]).toHaveAttribute("src", mapAssetIconHref("relay_uav"))
+  })
+
+  it("Given staged UxVs When approving the optimized allocation Then the allocation API is called", async () => {
+    render(<FleetDeploymentPanel />)
+
+    fireEvent.click(screen.getByRole("button", { name: "편성 승인" }))
+
+    await waitFor(() => {
+      expect(apiMocks.allocateMission).toHaveBeenCalledTimes(1)
+    })
   })
 
   it("Given deployed UxVs When tuning a vehicle status parameter Then the backend receives the updated vehicle state", async () => {
