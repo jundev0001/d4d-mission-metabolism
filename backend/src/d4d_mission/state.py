@@ -8,10 +8,12 @@ if TYPE_CHECKING:
 
 from d4d_mission.blackbox import JsonlBlackBox
 from d4d_mission.capability_gap import analyze_capability_gaps
+from d4d_mission.deployment import DeploymentCount, DeploymentError, apply_fleet_deployment
 from d4d_mission.immune import (
     ManualActionError,
     RecommendationNotFoundError,
     decide_recommendation,
+    find_recommendation,
 )
 from d4d_mission.immune_cards import build_recommendation
 from d4d_mission.models import (
@@ -89,6 +91,16 @@ class MissionRuntime:
         )
         return self._snapshot
 
+    def deploy_fleet(self, deployment: tuple[DeploymentCount, ...]) -> DashboardState:
+        self._snapshot = apply_fleet_deployment(snapshot=self._snapshot, deployment=deployment)
+        self._blackbox.record_model(
+            scenario_time=self._snapshot.scenario_time,
+            kind="mission",
+            summary="fleet deployment updated",
+            model=self._snapshot,
+        )
+        return self._snapshot
+
     def fleet_state(self) -> FleetStateResponse:
         return FleetStateResponse(vehicles=self._snapshot.vehicles)
 
@@ -140,11 +152,21 @@ class MissionRuntime:
 
     def decide(self, request: DecisionRequest) -> DashboardState:
         self._snapshot = decide_recommendation(snapshot=self._snapshot, request=request)
+        resolved_card = find_recommendation(
+            snapshot=self._snapshot,
+            recommendation_id=request.recommendation_id,
+        )
         self._blackbox.record_model(
             scenario_time=self._snapshot.scenario_time,
             kind="decision",
             summary=f"{request.action.value} {request.recommendation_id}",
             model=request,
+        )
+        self._blackbox.record_model(
+            scenario_time=self._snapshot.scenario_time,
+            kind="recommendation",
+            summary=f"{resolved_card.status.value} {resolved_card.title}",
+            model=resolved_card,
         )
         self._blackbox.record_model(
             scenario_time=self._snapshot.scenario_time,
@@ -178,6 +200,8 @@ class MissionRuntime:
 
 
 def runtime_error_to_status(error: Exception) -> int:
+    if isinstance(error, DeploymentError):
+        return 422
     if isinstance(error, UnknownTargetError):
         return 404
     if isinstance(error, (RecommendationNotFoundError, ManualActionError)):

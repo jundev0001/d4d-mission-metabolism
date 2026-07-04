@@ -1,5 +1,7 @@
 :root {
-  font-family: Aptos, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --font-primary: Aptos, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --font-mono: Cascadia Mono, Berkeley Mono, ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-primary);
   color: var(--text-primary);
   background: var(--surface-base);
   font-synthesis: none;

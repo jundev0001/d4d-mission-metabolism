@@ -1,0 +1,131 @@
+.graph-editor {
+  gap: var(--space-3);
+}
+
+.graph-action-grid,
+.edge-compose {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.graph-action-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.graph-action-grid .button,
+.edge-compose .button {
+  min-width: 0;
+  padding-inline: var(--space-2);
+  white-space: nowrap;
+}
+
+.edge-compose {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.edge-compose .button {
+  justify-self: stretch;
+}
+
+.edge-list {
+  display: grid;
+  gap: var(--space-2);
+  max-height: 168px;
+  margin: 0;
+  overflow: auto;
+  padding: 0;
+  padding-right: 2px;
+  list-style: none;
+}
+
+.edge-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: var(--space-2);
+  align-items: center;
+  min-height: 34px;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--surface-panel);
+}
+
+.edge-row span {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edge-row .button {
+  width: 30px;
+  min-height: 28px;
+  padding: 0;
+}
+
+.builder-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.flow-links path,
+.flow-links marker path {
+  fill: color-mix(in srgb, var(--accent-primary) 70%, transparent);
+}
+
+.flow-links line {
+  marker-end: url("#flow-arrow");
+}
+
+.flow-node.connect-source {
+  border-color: var(--status-info);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--status-info) 48%, transparent);
+}
+
+.flow-node.connect-target {
+  border-style: dashed;
+}
+
+.flow-node b {
+  grid-column: 1;
+  grid-row: 2;
+  color: var(--accent-primary);
+  font-family:
+    Cascadia Mono,
+    Berkeley Mono,
+    ui-monospace,
+    monospace;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.flow-edge-control {
+  position: absolute;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-elevated);
+  color: var(--text-muted);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+}
+
+.flow-edge-control:hover {
+  border-color: var(--status-danger);
+  color: var(--status-danger);
+}
+
+.flow-edge-control:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+}

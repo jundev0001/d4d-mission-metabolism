@@ -242,6 +242,13 @@ export function blackBoxSummaryLabel(value: string): string {
     return `${recommendationId} ${statusLabel(decision)}`
   }
 
+  const resolvedRecommendationMatch = value.match(/^(approved|rejected|manual) (.+)$/)
+  const recommendationStatus = resolvedRecommendationMatch?.[1]
+  const recommendationTitle = resolvedRecommendationMatch?.[2]
+  if (recommendationStatus !== undefined && recommendationTitle !== undefined) {
+    return `${recommendationTitleLabel(recommendationTitle)} ${statusLabel(recommendationStatus)}`
+  }
+
   return recommendationTitleLabel(value)
 }
 

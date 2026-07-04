@@ -3,6 +3,7 @@
 }
 
 .cop-frame {
+  position: relative;
   margin-top: var(--space-3);
   overflow: hidden;
   border: 1px solid var(--border-subtle);
@@ -14,6 +15,14 @@
   display: block;
   width: 100%;
   aspect-ratio: 1.18;
+  cursor: grab;
+  font-family: var(--font-primary);
+  touch-action: none;
+  user-select: none;
+}
+
+.cop-map.is-panning {
+  cursor: grabbing;
 }
 
 .map-bg {
@@ -111,31 +120,34 @@
 }
 
 .map-label,
-.map-metric,
 .asset-label {
-  font-family:
-    Cascadia Mono,
-    Berkeley Mono,
-    ui-monospace,
-    monospace;
+  font-variant-numeric: tabular-nums;
   paint-order: stroke;
   stroke: var(--surface-inset);
   stroke-width: 1.6;
+}
+
+.map-label-layer,
+.map-area-label {
+  pointer-events: none;
 }
 
 .map-label {
   fill: var(--text-secondary);
   font-size: 3.1px;
   font-weight: 590;
-}
-
-.map-metric {
-  fill: var(--text-muted);
-  font-size: 2.35px;
+  text-anchor: middle;
 }
 
 .asset {
   color: var(--accent-hover);
+  outline: none;
+}
+
+.asset-hitbox {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
 }
 
 .asset-ring {
@@ -189,12 +201,154 @@
 
 .asset-label {
   fill: var(--text-secondary);
-  font-size: 2.65px;
+  font-size: 2.25px;
+}
+
+.asset-info {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+
+.asset-info-layer {
+  pointer-events: none;
+}
+
+.asset-info.visible {
+  opacity: 1;
+}
+
+.asset.asset-active .asset-ring,
+.asset:focus .asset-ring,
+.asset:hover .asset-ring {
+  stroke-width: 0.95;
+}
+
+.asset-info-bg {
+  fill: color-mix(in srgb, var(--surface-panel) 96%, transparent);
+  stroke: var(--border-strong);
+  stroke-width: 0.45;
+}
+
+.asset-info-title,
+.asset-info-line {
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: var(--surface-panel);
+  stroke-width: 0.7;
+}
+
+.asset-info-title {
+  fill: var(--text-primary);
+  font-size: 2.35px;
+  font-weight: 590;
+}
+
+.asset-info-line {
+  fill: var(--text-secondary);
+  font-size: 2.05px;
+}
+
+.asset-context-menu {
+  position: absolute;
+  z-index: 40;
+  display: grid;
+  gap: var(--space-2);
+  width: 228px;
+  padding: var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-panel) 98%, transparent);
+  box-shadow: var(--shadow-popover);
+}
+
+.asset-context-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.asset-context-head span {
+  display: grid;
+  min-width: 0;
+}
+
+.asset-context-head strong,
+.asset-context-head small,
+.asset-context-meta,
+.asset-context-note {
+  overflow-wrap: anywhere;
+}
+
+.asset-context-head strong {
+  color: var(--text-primary);
+  font-size: 0.84rem;
+}
+
+.asset-context-head small,
+.asset-context-meta,
+.asset-context-note {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.asset-context-meta {
+  margin: 0;
+}
+
+.asset-context-action,
+.asset-spec-editor button {
+  justify-content: center;
+}
+
+.asset-spec-editor {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  margin: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+}
+
+.asset-spec-editor legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0 var(--space-1);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.asset-spec-editor label {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.asset-spec-editor select {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.asset-context-note {
+  margin: 0;
 }
 
 .cop-readout {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
   gap: var(--space-2);
   margin-top: var(--space-3);
   min-inline-size: 0;
@@ -213,6 +367,10 @@
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.area-coverage-chip {
+  color: var(--text-primary);
 }
 
 .map-legend {

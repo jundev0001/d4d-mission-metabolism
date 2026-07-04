@@ -44,22 +44,34 @@ export const DEFAULT_CUSTOM_SCENARIO: CustomScenarioDocument = CustomScenarioDoc
       {
         id: "node-comm-jam",
         event: { event_type: "comm_jam", target: "B", severity: 0.82 },
-        position: { x: 8, y: 34 },
+        position: { x: 10, y: 38 },
       },
       {
         id: "node-battery",
         event: { event_type: "battery_drop", target: "UxV-02", severity: 0.9 },
-        position: { x: 38, y: 34 },
+        position: { x: 38, y: 26 },
       },
       {
         id: "node-link",
         event: { event_type: "comm_degraded", target: "UxV-03", severity: 0.74 },
-        position: { x: 68, y: 34 },
+        position: { x: 38, y: 50 },
+      },
+      {
+        id: "node-gps",
+        event: { event_type: "gps_drop", target: "UxV-05", severity: 0.7 },
+        position: { x: 66, y: 26 },
+      },
+      {
+        id: "node-no-go",
+        event: { event_type: "no_go", target: "B", severity: 0.68 },
+        position: { x: 66, y: 50 },
       },
     ],
     edges: [
       { from: "node-comm-jam", to: "node-battery" },
-      { from: "node-battery", to: "node-link" },
+      { from: "node-comm-jam", to: "node-link" },
+      { from: "node-battery", to: "node-gps" },
+      { from: "node-link", to: "node-no-go" },
     ],
   },
 })

@@ -6,8 +6,10 @@ from typing import NoReturn
 import anyio
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import Field
 
 from d4d_mission.catalog import mission_templates, vehicle_type_profiles
+from d4d_mission.deployment import DeploymentCount, DeploymentError
 from d4d_mission.immune import ManualActionError, RecommendationNotFoundError
 from d4d_mission.models import (
     AllocationResponse,
@@ -25,10 +27,20 @@ from d4d_mission.models import (
     VehicleTypeCatalogResponse,
 )
 from d4d_mission.state import MissionRuntime, UnknownTargetError, runtime_error_to_status
+from d4d_mission.types import VehicleType  # noqa: TC001 - Pydantic needs this enum at runtime.
 
 
 class MissionCreateRequest(StrictModel):
     seed: int = 42
+
+
+class DeploymentItemRequest(StrictModel):
+    vehicle_type: VehicleType
+    count: int = Field(ge=0, le=12)
+
+
+class FleetDeploymentRequest(StrictModel):
+    items: tuple[DeploymentItemRequest, ...] = Field(min_length=1, max_length=8)
 
 
 def create_app() -> FastAPI:
@@ -61,6 +73,17 @@ def create_app() -> FastAPI:
     @app.get("/fleet/state", response_model=FleetStateResponse)
     async def fleet_state() -> FleetStateResponse:
         return runtime.fleet_state()
+
+    @app.post("/fleet/deploy", response_model=DashboardState)
+    async def fleet_deploy(request: FleetDeploymentRequest) -> DashboardState:
+        deployment = tuple(
+            DeploymentCount(vehicle_type=item.vehicle_type, count=item.count)
+            for item in request.items
+        )
+        try:
+            return runtime.deploy_fleet(deployment=deployment)
+        except DeploymentError as error:
+            _raise_http(error)
 
     @app.post("/capability/compute", response_model=CapabilityReport)
     async def capability_compute() -> CapabilityReport:

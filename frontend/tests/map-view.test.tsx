@@ -1,0 +1,100 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { MapView } from "../src/components/MapView"
+import { DEFAULT_CUSTOM_SCENARIO } from "../src/defaultCustomScenario"
+import { useMissionStore } from "../src/store"
+import { makeDashboardState } from "./fixtures"
+import { makeMapDashboard, mapVehicleTypeProfiles } from "./map-fixtures"
+
+const apiMocks = vi.hoisted(() => ({
+  deployFleet: vi.fn(),
+  fetchReplay: vi.fn(),
+}))
+
+vi.mock("../src/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../src/api")>()),
+  deployFleet: apiMocks.deployFleet,
+  fetchReplay: apiMocks.fetchReplay,
+}))
+
+describe("map view", () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    apiMocks.fetchReplay.mockResolvedValue({ entries: [] })
+    apiMocks.deployFleet.mockResolvedValue(makeMapDashboard())
+    useMissionStore.setState({
+      customScenario: DEFAULT_CUSTOM_SCENARIO,
+      dashboard: makeDashboardState(),
+      isRunningDemo: false,
+      lastError: null,
+      replay: [],
+      selectedReplayIndex: 0,
+      vehicleTypeProfiles: mapVehicleTypeProfiles,
+    })
+  })
+
+  it("Given a UxV on the COP When the map renders Then hover details are available on the asset glyph", () => {
+    render(<MapView />)
+
+    const assetGlyph = screen.getByLabelText("UxV-04 자산 정보")
+    fireEvent.mouseEnter(assetGlyph)
+
+    const map = screen.getByTestId("map-view")
+    const svg = map.querySelector(".cop-map")
+    const infoLayer = svg?.querySelector(".asset-info-layer")
+    const visibleInfo = infoLayer?.querySelector(".asset-info.visible")
+
+    expect(assetGlyph).toBeInTheDocument()
+    expect(infoLayer).toBeInTheDocument()
+    expect(svg?.lastElementChild).toBe(infoLayer)
+    expect(svg?.querySelector(".map-metric")).toBeNull()
+    expect(screen.getByText(/^구역 B 최저/)).toBeInTheDocument()
+    expect(visibleInfo).toHaveTextContent("UxV-04 · 중계 UAV")
+    expect(visibleInfo).toHaveTextContent("가용 80% · 배터리 90%")
+  })
+
+  it("Given the COP is visible When the operator wheels and drags Then the map moves without scaling asset overlays", () => {
+    useMissionStore.setState({ dashboard: makeMapDashboard() })
+    render(<MapView />)
+    const svg = copSvg()
+    vi.spyOn(svg, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ height: 860, width: 1000, x: 0, y: 0 }),
+    )
+    const assetGlyph = screen.getByLabelText("UxV-04 자산 정보")
+
+    fireEvent.wheel(svg, { clientX: 500, clientY: 430, deltaY: -120 })
+    const zoomedViewBox = svg.getAttribute("viewBox")
+    fireEvent.pointerDown(svg, { button: 0, clientX: 500, clientY: 430, pointerId: 1 })
+    fireEvent.pointerMove(svg, { clientX: 560, clientY: 480, pointerId: 1 })
+
+    expect(zoomedViewBox).not.toBe("0 0 100 86")
+    expect(svg.getAttribute("viewBox")).not.toBe(zoomedViewBox)
+    expect(assetGlyph).toHaveAttribute("transform", "translate(54 44) scale(0.86)")
+  })
+
+  it("Given deployed UxVs When an asset is removed from the COP menu Then fleet deployment is updated", async () => {
+    useMissionStore.setState({ dashboard: makeMapDashboard() })
+    render(<MapView />)
+
+    fireEvent.contextMenu(screen.getByLabelText("UxV-04 자산 정보"), { clientX: 500, clientY: 300 })
+    fireEvent.click(screen.getByRole("button", { name: "UxV-04 제거" }))
+
+    await waitFor(() => {
+      expect(apiMocks.deployFleet).toHaveBeenCalledWith([
+        { vehicle_type: "fixedwing_survey_uav", count: 1 },
+        { vehicle_type: "micro_scout_uav", count: 1 },
+        { vehicle_type: "overwatch_uav", count: 1 },
+        { vehicle_type: "scout_rover", count: 1 },
+        { vehicle_type: "sensor_rover", count: 1 },
+      ])
+    })
+  })
+})
+
+function copSvg(): SVGSVGElement {
+  const svg = screen.getByTestId("map-view").querySelector(".cop-map")
+  if (svg instanceof SVGSVGElement) {
+    return svg
+  }
+  throw new TypeError("COP SVG not found")
+}
