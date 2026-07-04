@@ -8,7 +8,7 @@ export const CapabilityNames = [
   "reserve",
 ] as const
 
-const EventTypes = [
+export const EventTypes = [
   "comm_jam",
   "gps_drop",
   "battery_drop",

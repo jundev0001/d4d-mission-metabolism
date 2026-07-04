@@ -1,0 +1,52 @@
+.workspace-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  max-width: 1480px;
+  margin: var(--space-4) auto 0;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface-panel);
+}
+
+.workspace-tab {
+  display: grid;
+  gap: 1px;
+  min-width: 160px;
+  min-height: 46px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: left;
+}
+
+.workspace-tab span {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.workspace-tab small {
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.workspace-tab.active {
+  border-color: var(--accent-primary);
+  background: var(--surface-elevated);
+  color: var(--text-secondary);
+}
+
+.workspace-tab.active span {
+  color: var(--text-primary);
+}
+
+.workspace-tab:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+}

@@ -7,6 +7,8 @@ import {
   sendDecision,
   websocketUrl,
 } from "./api"
+import { type CustomScenarioDocument, orderedCustomEvents } from "./customScenario"
+import { DEFAULT_CUSTOM_SCENARIO } from "./defaultCustomScenario"
 import type { BlackBoxEntry } from "./types"
 import {
   type DashboardState,
@@ -29,12 +31,15 @@ type MissionStore = {
   readonly isRunningDemo: boolean
   readonly selectedReplayIndex: number
   readonly lastError: string | null
+  readonly customScenario: CustomScenarioDocument
   readonly hydrate: () => Promise<void>
   readonly acceptSnapshot: (dashboard: DashboardState) => void
   readonly reset: () => Promise<void>
   readonly injectEvent: (event: EventPayload) => Promise<void>
   readonly decide: (decision: DecisionPayload) => Promise<void>
   readonly runScriptedDemo: () => Promise<void>
+  readonly runCustomScenario: () => Promise<void>
+  readonly setCustomScenario: (customScenario: CustomScenarioDocument) => void
   readonly selectReplayIndex: (index: number) => void
   readonly connectLive: () => () => void
 }
@@ -46,6 +51,7 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
   isRunningDemo: false,
   selectedReplayIndex: 0,
   lastError: null,
+  customScenario: DEFAULT_CUSTOM_SCENARIO,
 
   hydrate: async () => {
     try {
@@ -107,6 +113,28 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
     } finally {
       set({ isRunningDemo: false })
     }
+  },
+
+  runCustomScenario: async () => {
+    if (get().isRunningDemo) {
+      return
+    }
+    set({ isRunningDemo: true, lastError: null })
+    try {
+      await get().reset()
+      await orderedCustomEvents(get().customScenario).reduce(
+        (sequence, event) => sequence.then(() => injectDemoEvent(event, get)),
+        Promise.resolve(),
+      )
+    } catch (error) {
+      set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
+    } finally {
+      set({ isRunningDemo: false })
+    }
+  },
+
+  setCustomScenario: (customScenario) => {
+    set({ customScenario, lastError: null })
   },
 
   selectReplayIndex: (index) => {

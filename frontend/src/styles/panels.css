@@ -24,21 +24,6 @@
   min-height: 24px;
 }
 
-.event-grid {
-  display: grid;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
-
-.event-button {
-  justify-content: flex-start;
-}
-
-.event-copy {
-  display: grid;
-  gap: 1px;
-}
-
 .area-stack {
   margin-top: var(--space-3);
 }

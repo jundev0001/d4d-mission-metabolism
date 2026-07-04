@@ -1,5 +1,9 @@
 @import "./styles/shell.css";
+@import "./styles/workspace-tabs.css";
 @import "./styles/metrics.css";
+@import "./styles/event-controls.css";
 @import "./styles/panels.css";
 @import "./styles/map.css";
+@import "./styles/builder.css";
+@import "./styles/builder-workspace.css";
 @import "./styles/responsive.css";

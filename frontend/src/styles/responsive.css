@@ -21,6 +21,15 @@
     grid-template-columns: 1fr;
   }
 
+  .workspace-tabs {
+    align-items: stretch;
+  }
+
+  .workspace-tab {
+    min-width: 0;
+    width: 100%;
+  }
+
   .mission-intent {
     padding: var(--space-3) 0;
     border-block: 1px solid var(--border-subtle);

@@ -1,35 +1,14 @@
-import { areaLabel, formatPercent, targetLabel } from "../format"
+import { areaPath, type CustomMapArea } from "../customScenario"
+import { formatPercent, targetLabel } from "../format"
 import { useMissionStore } from "../store"
 import type { DashboardState, Vehicle } from "../types"
 
 const GRID_LINES = [12, 24, 36, 48, 60, 72, 84] as const
 
-const AREA_SECTORS = [
-  {
-    id: "A",
-    path: "M8 14 L35 9 L45 31 L33 48 L12 42 Z",
-    label: { x: 16, y: 21 },
-    metric: { x: 16, y: 27 },
-    threat: { x: 26, y: 30 },
-  },
-  {
-    id: "B",
-    path: "M39 18 L78 16 L88 50 L62 62 L44 48 Z",
-    label: { x: 52, y: 30 },
-    metric: { x: 52, y: 36 },
-    threat: { x: 64, y: 39 },
-  },
-  {
-    id: "C",
-    path: "M17 54 L45 50 L87 64 L80 80 L19 77 Z",
-    label: { x: 63, y: 70 },
-    metric: { x: 63, y: 76 },
-    threat: { x: 65, y: 67 },
-  },
-] as const
-
 export function MapView() {
   const dashboard = useMissionStore((state) => state.dashboard)
+  const mapAreas = useMissionStore((state) => state.customScenario.map.areas)
+  const mapName = useMissionStore((state) => state.customScenario.map.name)
   if (!dashboard) {
     return null
   }
@@ -59,7 +38,7 @@ export function MapView() {
           viewBox="0 0 100 86"
           className="cop-map"
           role="img"
-          aria-label="A B C 구역 공통작전상황도"
+          aria-label={`${mapName} 공통작전상황도`}
         >
           <defs>
             <pattern id="grid-major" width="12" height="12" patternUnits="userSpaceOnUse">
@@ -81,7 +60,7 @@ export function MapView() {
           <path className="route-line route-secondary" d="M26 58 L55 38 L73 25" />
           <circle className="relay-node" cx="55" cy="38" r="2.2" />
 
-          {AREA_SECTORS.map((area) => (
+          {mapAreas.map((area) => (
             <AreaSector
               key={area.id}
               area={area}
@@ -124,13 +103,14 @@ export function MapView() {
 }
 
 type AreaSectorProps = {
-  readonly area: (typeof AREA_SECTORS)[number]
+  readonly area: CustomMapArea
   readonly minimumCoverage: number
   readonly noGo: boolean
   readonly threat: number
 }
 
 function AreaSector(props: AreaSectorProps) {
+  const path = areaPath(props.area)
   const coverageTone =
     props.minimumCoverage >= 0.8
       ? "healthy"
@@ -139,19 +119,23 @@ function AreaSector(props: AreaSectorProps) {
         : "deficit"
   return (
     <g className={`sector sector-${props.area.id.toLowerCase()} ${coverageTone}`}>
-      <path className="sector-fill" d={props.area.path} />
-      <path className="sector-outline" d={props.area.path} />
-      {props.noGo ? <path className="no-go-area" d={props.area.path} /> : null}
+      <path className="sector-fill" d={path} />
+      <path className="sector-outline" d={path} />
+      {props.noGo ? <path className="no-go-area" d={path} /> : null}
       {props.threat > 0.42 ? (
         <g className="threat-ring">
-          <circle cx={props.area.threat.x} cy={props.area.threat.y} r="12" />
-          <circle cx={props.area.threat.x} cy={props.area.threat.y} r="18" />
+          <circle cx={props.area.threat_position.x} cy={props.area.threat_position.y} r="12" />
+          <circle cx={props.area.threat_position.x} cy={props.area.threat_position.y} r="18" />
         </g>
       ) : null}
-      <text x={props.area.label.x} y={props.area.label.y} className="map-label">
-        {areaLabel(props.area.id)}
+      <text x={props.area.label_position.x} y={props.area.label_position.y} className="map-label">
+        {props.area.label}
       </text>
-      <text x={props.area.metric.x} y={props.area.metric.y} className="map-metric">
+      <text
+        x={props.area.metric_position.x}
+        y={props.area.metric_position.y}
+        className="map-metric"
+      >
         최저 {formatPercent(props.minimumCoverage)}
       </text>
     </g>
