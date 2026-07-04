@@ -1,4 +1,5 @@
-import { Play, RotateCcw, ShieldCheck } from "lucide-react"
+import { Play, RotateCcw } from "lucide-react"
+import { formatPercent, missionObjectiveLabel } from "../format"
 import { useMissionStore } from "../store"
 
 export function Header() {
@@ -6,26 +7,33 @@ export function Header() {
   const reset = useMissionStore((state) => state.reset)
   const runScriptedDemo = useMissionStore((state) => state.runScriptedDemo)
   const isRunningDemo = useMissionStore((state) => state.isRunningDemo)
+  const targetMcc = dashboard?.mission.constraints.target_mcc ?? 0.8
+  const relayRedundancy = dashboard?.mission.constraints.min_relay_redundancy ?? 1
+  const returnThreshold = dashboard?.mission.constraints.return_battery_threshold ?? 0.2
 
   return (
-    <header className="top-bar">
-      <div className="brand-lockup">
-        <div className="brand-mark">
-          <ShieldCheck size={18} aria-hidden="true" />
-        </div>
-        <div>
-          <p className="caption">D4D Multi-UxV Control</p>
-          <h1>Capability Mission OS</h1>
-        </div>
+    <header className="mission-bar">
+      <div className="mission-title">
+        <h1>D4D 임무 메타볼리즘</h1>
+        <span className="mission-clock">T+{dashboard?.scenario_time ?? 0}s</span>
       </div>
-      <div className="mission-summary">
-        <span>{dashboard?.mission.objective ?? "Mission loading"}</span>
-        <span className="mono">T+{dashboard?.scenario_time ?? 0}s</span>
+      <div className="mission-intent">
+        <span className="mission-objective">
+          {dashboard ? missionObjectiveLabel(dashboard.mission.objective) : "임무 로딩 중"}
+        </span>
+        <span className="mission-constraints">
+          {"MCC 목표 "}
+          {formatPercent(targetMcc)}
+          {" / B구역 중계 "}
+          {relayRedundancy}
+          {" 이상 / 복귀 기준 "}
+          {formatPercent(returnThreshold)}
+        </span>
       </div>
       <div className="toolbar">
         <button className="button secondary" type="button" onClick={() => void reset()}>
           <RotateCcw size={15} aria-hidden="true" />
-          Reset
+          초기화
         </button>
         <button
           className="button primary"
@@ -34,7 +42,7 @@ export function Header() {
           onClick={() => void runScriptedDemo()}
         >
           <Play size={15} aria-hidden="true" />
-          {isRunningDemo ? "Running" : "Run Demo"}
+          {isRunningDemo ? "실행 중" : "데모 실행"}
         </button>
       </div>
     </header>

@@ -1,5 +1,13 @@
 import { Check, Hand, ListChecks, X } from "lucide-react"
-import { formatSignedNumber, formatSignedPercent } from "../format"
+import {
+  areaLabel,
+  causeLabel,
+  formatSignedNumber,
+  formatSignedPercent,
+  microActionLabel,
+  recommendationTitleLabel,
+  statusLabel,
+} from "../format"
 import { useMissionStore } from "../store"
 import type { DecisionAction, DecisionPayload, MicroActionType, RecommendationCard } from "../types"
 
@@ -31,18 +39,21 @@ export function RecommendationPanel() {
     (state) => state.dashboard?.recommendations ?? EMPTY_RECOMMENDATIONS,
   )
   const decide = useMissionStore((state) => state.decide)
+  const pendingCount = cards.filter((card) => card.status === "pending").length
 
   return (
     <section className="panel recommendation-panel" data-testid="recommendation-panel">
       <div className="panel-title">
-        <span>Recommendation Cards</span>
-        <span className="caption">{cards.length} total</span>
+        <span>판단 대기열</span>
+        <span className="caption">
+          대기 {pendingCount} / 전체 {cards.length}
+        </span>
       </div>
       <div className="recommendation-list">
         {cards.length === 0 ? (
           <div className="empty-state">
             <ListChecks size={18} aria-hidden="true" />
-            <span>No pending exceptions</span>
+            <span>사람 승인 대기 없음</span>
           </div>
         ) : (
           cards.map((card) => (
@@ -71,6 +82,7 @@ type RecommendationCardViewProps = {
 
 export function RecommendationCardView(props: RecommendationCardViewProps) {
   const firstVehicle = props.card.actions[0]?.vehicle_id ?? "UxV-06"
+  const causes = props.card.causes.map(causeLabel).join(" / ")
 
   return (
     <article
@@ -79,33 +91,37 @@ export function RecommendationCardView(props: RecommendationCardViewProps) {
     >
       <div className="card-heading">
         <div>
-          <span className="severity">{props.card.severity}</span>
-          <h3>{props.card.title}</h3>
+          <span className="severity">{statusLabel(props.card.severity)}</span>
+          <h3>{recommendationTitleLabel(props.card.title)}</h3>
         </div>
-        <span className="status-pill">{props.card.status}</span>
+        <span className="status-pill">{statusLabel(props.card.status)}</span>
       </div>
-      <div className="chip-row">
-        {props.card.causes.map((cause) => (
-          <span className="chip" key={cause}>
-            {cause.replaceAll("_", " ")}
-          </span>
-        ))}
-      </div>
+      <p className="cause-line">
+        <span>원인</span>
+        {causes}
+      </p>
       <ul className="action-list">
         {props.card.actions.map((action) => (
           <li key={`${props.card.id}-${action.vehicle_id}-${action.action}`}>
             <strong>{action.vehicle_id}</strong>
-            <span>{action.action.replaceAll("_", " ")}</span>
+            <span>
+              {microActionLabel(action.action)}
+              {action.area ? ` / ${areaLabel(action.area)}` : ""}
+            </span>
           </li>
         ))}
       </ul>
       <fieldset className="delta-grid">
-        <legend className="sr-only">Expected KPI effect</legend>
-        <span>MCC {formatSignedPercent(props.card.expected_effect.mcc_delta)}</span>
+        <legend className="sr-only">예상 KPI 변화</legend>
         <span>
-          Collapse {formatSignedPercent(props.card.expected_effect.collapse_probability_delta)}
+          <b>MCC</b> {formatSignedPercent(props.card.expected_effect.mcc_delta)}
         </span>
-        <span>Debt {formatSignedNumber(props.card.expected_effect.autonomy_debt_delta)}</span>
+        <span>
+          <b>붕괴</b> {formatSignedPercent(props.card.expected_effect.collapse_probability_delta)}
+        </span>
+        <span>
+          <b>부채</b> {formatSignedNumber(props.card.expected_effect.autonomy_debt_delta)}
+        </span>
       </fieldset>
       <div className="decision-row">
         <button
@@ -115,7 +131,7 @@ export function RecommendationCardView(props: RecommendationCardViewProps) {
           onClick={() => props.onDecision("approve")}
         >
           <Check size={14} aria-hidden="true" />
-          Approve
+          승인
         </button>
         <button
           className="button secondary"
@@ -124,7 +140,7 @@ export function RecommendationCardView(props: RecommendationCardViewProps) {
           onClick={() => props.onDecision("manual", "replace", firstVehicle)}
         >
           <Hand size={14} aria-hidden="true" />
-          Manual
+          수동
         </button>
         <button
           className="button danger"
@@ -133,7 +149,7 @@ export function RecommendationCardView(props: RecommendationCardViewProps) {
           onClick={() => props.onDecision("reject")}
         >
           <X size={14} aria-hidden="true" />
-          Reject
+          거절
         </button>
       </div>
     </article>

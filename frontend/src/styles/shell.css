@@ -1,0 +1,255 @@
+.app-shell,
+.boot-screen {
+  min-height: 100dvh;
+  background: var(--surface-base);
+}
+
+.app-shell {
+  padding: var(--space-4);
+}
+
+.boot-screen {
+  display: grid;
+  place-items: center;
+}
+
+.boot-panel,
+.panel,
+.recommendation-card {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-panel);
+  border-radius: 8px;
+}
+
+.boot-panel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  color: var(--text-secondary);
+}
+
+.pulse-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 8px;
+  background: var(--status-success);
+}
+
+.mission-bar,
+.metric-strip,
+.workspace {
+  max-width: 1480px;
+  margin: 0 auto;
+}
+
+.mission-bar {
+  display: grid;
+  grid-template-columns: minmax(220px, 296px) minmax(320px, 1fr) auto;
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-4) 0 var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.toolbar,
+.metric-heading,
+.panel-title,
+.area-header,
+.capability-label,
+.decision-row,
+.map-legend,
+.card-heading {
+  display: flex;
+  align-items: center;
+}
+
+.toolbar,
+.metric-heading,
+.decision-row {
+  gap: var(--space-2);
+}
+
+.mission-title {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.mission-clock,
+.mission-constraints,
+.metric-context {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+
+.mission-clock {
+  font-family:
+    Cascadia Mono,
+    Berkeley Mono,
+    ui-monospace,
+    monospace;
+}
+
+.mission-intent {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: 0 var(--space-4);
+  border-inline: 1px solid var(--border-subtle);
+}
+
+.mission-objective {
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 590;
+}
+
+h3 {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.caption,
+.mono,
+.severity,
+.status-pill,
+.chip,
+.kind {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.mono {
+  font-family:
+    Cascadia Mono,
+    Berkeley Mono,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.caption,
+.empty-state {
+  color: var(--text-muted);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 34px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-command);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    border-color 180ms ease-in-out,
+    color 180ms ease-in-out,
+    background 180ms ease-in-out;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--accent-primary);
+}
+
+.button:active:not(:disabled) {
+  background: var(--surface-inset);
+}
+
+.button:focus-visible,
+.blackbox-row:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.button.primary {
+  border-color: var(--accent-primary);
+  color: var(--surface-base);
+  background: var(--accent-primary);
+}
+
+.button.primary:hover:not(:disabled) {
+  border-color: var(--accent-hover);
+  background: var(--accent-hover);
+}
+
+.button.primary:disabled {
+  border-color: var(--border-subtle);
+  background: var(--surface-command);
+  color: var(--text-muted);
+}
+
+.button.danger {
+  color: var(--status-danger);
+}
+
+.error-banner {
+  max-width: 1480px;
+  margin: 0 auto var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--status-danger) 45%, transparent);
+  border-radius: 8px;
+  color: var(--status-danger);
+  background: color-mix(in srgb, var(--status-danger) 12%, transparent);
+}
+
+.metric-heading,
+.panel-title {
+  justify-content: space-between;
+  color: var(--text-secondary);
+}
+
+.success,
+.satisfied {
+  color: var(--status-success);
+}
+
+.warning,
+.strained {
+  color: var(--status-warning);
+}
+
+.danger,
+.deficit,
+.critical {
+  color: var(--status-danger);
+}
+
+.info {
+  color: var(--status-info);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -27,6 +27,23 @@ from d4d_mission.models import (
 from d4d_mission.scenario import apply_event_to_snapshot, create_initial_snapshot
 from d4d_mission.types import EventType
 
+AREA_TARGET_EVENTS = frozenset(
+    {
+        EventType.COMM_JAM,
+        EventType.NO_GO,
+        EventType.PRIORITY_SHIFT,
+    }
+)
+VEHICLE_TARGET_EVENTS = frozenset(
+    {
+        EventType.BATTERY_DROP,
+        EventType.COMM_DEGRADED,
+        EventType.GPS_DROP,
+        EventType.SENSOR_FAIL,
+        EventType.VEHICLE_LOST,
+    }
+)
+
 
 @dataclass(frozen=True, slots=True)
 class UnknownTargetError(Exception):
@@ -125,22 +142,20 @@ class MissionRuntime:
         return ReplayResponse(entries=self._blackbox.entries())
 
     def _ensure_target_exists(self, event: EventRequest) -> None:
-        match event.event_type:
-            case EventType.COMM_JAM | EventType.NO_GO | EventType.PRIORITY_SHIFT:
-                if event.target not in self._snapshot.mission.areas:
-                    raise UnknownTargetError(target=event.target)
-            case (
-                EventType.BATTERY_DROP
-                | EventType.COMM_DEGRADED
-                | EventType.GPS_DROP
-                | EventType.SENSOR_FAIL
-                | EventType.VEHICLE_LOST
-            ):
-                vehicle_ids = {vehicle.id for vehicle in self._snapshot.vehicles}
-                if event.target not in vehicle_ids:
-                    raise UnknownTargetError(target=event.target)
-            case EventType.ALERT_FLOOD:
-                return
+        if event.event_type in AREA_TARGET_EVENTS:
+            if event.target not in self._snapshot.mission.areas:
+                raise UnknownTargetError(target=event.target)
+            return
+
+        if event.event_type in VEHICLE_TARGET_EVENTS:
+            vehicle_ids = {vehicle.id for vehicle in self._snapshot.vehicles}
+            if event.target not in vehicle_ids:
+                raise UnknownTargetError(target=event.target)
+            return
+
+        if event.event_type is not EventType.ALERT_FLOOD:
+            msg = f"unsupported event type: {event.event_type}"
+            raise ValueError(msg)
 
 
 def runtime_error_to_status(error: Exception) -> int:

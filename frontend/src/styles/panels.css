@@ -1,0 +1,248 @@
+.workspace {
+  display: grid;
+  grid-template-columns: 296px minmax(520px, 1fr) 388px;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.left-rail,
+.center-stage,
+.right-rail,
+.area-stack,
+.recommendation-list {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+}
+
+.panel {
+  min-width: 0;
+  padding: var(--space-4);
+}
+
+.panel-title {
+  min-height: 24px;
+}
+
+.event-grid {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.event-button {
+  justify-content: flex-start;
+}
+
+.event-copy {
+  display: grid;
+  gap: 1px;
+}
+
+.area-stack {
+  margin-top: var(--space-3);
+}
+
+.area-card,
+.comparison-card,
+.ccr-band {
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface-inset);
+}
+
+.area-header,
+.capability-label {
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.capability-row {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.recommendation-card {
+  position: relative;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-color: var(--border-strong);
+  border-left-width: 3px;
+  color: var(--text-secondary);
+}
+
+.recommendation-card.pending {
+  background: var(--surface-elevated);
+}
+
+.recommendation-card.high {
+  border-left-color: var(--status-warning);
+}
+
+.recommendation-card.critical {
+  border-left-color: var(--status-danger);
+}
+
+.recommendation-card.approved {
+  border-color: color-mix(in srgb, var(--status-success) 45%, transparent);
+}
+
+.recommendation-card.rejected {
+  opacity: 0.7;
+}
+
+.card-heading {
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.severity,
+.status-pill,
+.chip,
+.kind {
+  display: inline-flex;
+  padding: 2px 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+.cause-line {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.cause-line span {
+  color: var(--text-secondary);
+}
+
+.action-list,
+.blackbox-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.action-list li,
+.delta-grid,
+.comparison-grid {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.delta-grid {
+  padding: 0;
+  border: 0;
+}
+
+.action-list li {
+  grid-template-columns: 68px 1fr;
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.delta-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.delta-grid span {
+  padding: var(--space-2);
+  border-radius: 6px;
+  background: var(--surface-inset);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.delta-grid b {
+  display: block;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.decision-row {
+  flex-wrap: wrap;
+}
+
+.empty-state {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+}
+
+.blackbox-list {
+  display: grid;
+  gap: var(--space-2);
+  max-height: 300px;
+  overflow: auto;
+}
+
+.blackbox-row {
+  display: grid;
+  grid-template-columns: 56px 86px 1fr;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.blackbox-row.selected,
+.blackbox-row:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.evaluation-panel {
+  min-height: 164px;
+}
+
+.comparison-table {
+  width: 100%;
+  margin-top: var(--space-3);
+  border-collapse: collapse;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.comparison-table thead th {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.comparison-table tbody th {
+  font-weight: 500;
+}
+
+.comparison-table strong,
+.ccr-band strong {
+  color: var(--text-primary);
+}
+
+.ccr-band {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: var(--space-3);
+  align-items: center;
+  margin-top: var(--space-3);
+}

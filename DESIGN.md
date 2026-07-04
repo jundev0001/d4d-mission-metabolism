@@ -2,7 +2,9 @@
 
 ## 1. Atmosphere & Identity
 
-A quiet mission command surface for one operator supervising many attritable UxVs. The signature is capability metabolism: dark layered panels, thin tactical lines, and KPI color shifts that make mission health legible before vehicle telemetry becomes noise.
+A quiet mission decision surface for one operator supervising many attritable UxVs. The signature is capability budget accounting: graphite surfaces, field-accent command states, thin table rules, and status color shifts that make mission health legible before vehicle telemetry becomes noise.
+
+Visible copy is Korean-first where the D4D glossary gives a clear term: 공통작전상황도(COP), 전자전(EW), 재밍, 거부환경, 인지부하, 회복 탄력성, 사람 개입, UxV, ISR. Product-specific KPI names keep their acronym when that helps judging: MCC, CCR, COP, EW.
 
 ## 2. Color
 
@@ -10,30 +12,31 @@ A quiet mission command surface for one operator supervising many attritable UxV
 
 | Role | Token | Dark | Usage |
 |---|---|---:|---|
-| Surface/base | --surface-base | #08090a | Page canvas |
-| Surface/panel | --surface-panel | #101114 | Primary panels |
-| Surface/elevated | --surface-elevated | #17191d | Cards and toolbars |
-| Surface/inset | --surface-inset | #0c0d10 | Map and recessed charts |
-| Surface-hover | --surface-hover | #202329 | Hover state |
-| Text/primary | --text-primary | #f4f7fb | Main text |
-| Text/secondary | --text-secondary | #c2cad6 | Supporting text |
-| Text-muted | --text-muted | #7d8796 | Metadata |
+| Surface/base | --surface-base | #0b0c0d | Page canvas |
+| Surface/panel | --surface-panel | #111315 | Primary panels |
+| Surface/elevated | --surface-elevated | #17191b | Cards and toolbars |
+| Surface/inset | --surface-inset | #08090a | Map and recessed charts |
+| Surface-hover | --surface-hover | #1d2023 | Hover state |
+| Text/primary | --text-primary | #f0f2ec | Main text |
+| Text/secondary | --text-secondary | #b9bfb8 | Supporting text |
+| Text-muted | --text-muted | #7f877f | Metadata |
 | Border/subtle | --border-subtle | rgba(255,255,255,0.06) | Soft panel separation |
-| Border/strong | --border-strong | rgba(255,255,255,0.13) | Interactive outlines |
-| Accent/primary | --accent-primary | #7170ff | Primary commands |
-| Accent-hover | --accent-hover | #8d8cff | Primary hover |
-| Status/success | --status-success | #31d0aa | Capability recovery |
-| Status/warning | --status-warning | #f2b84b | Degradation |
-| Status/danger | --status-danger | #ff6b6b | Collapse or high severity |
-| Status/info | --status-info | #66c6ff | Relay and comm state |
-| Map/zone-a | --map-zone-a | #5ba7ff | Area A |
-| Map/zone-b | --map-zone-b | #f2b84b | Area B |
-| Map/zone-c | --map-zone-c | #31d0aa | Area C |
+| Border/strong | --border-strong | rgba(255,255,255,0.14) | Interactive outlines |
+| Accent/primary | --accent-primary | #b9c56a | Primary commands |
+| Accent-hover | --accent-hover | #d0dc80 | Primary hover |
+| Status/success | --status-success | #45c39a | Capability recovery |
+| Status/warning | --status-warning | #d3a64f | Degradation |
+| Status/danger | --status-danger | #df6f68 | Collapse or high severity |
+| Status/info | --status-info | #9ba6aa | Relay and comm state |
+| Map/zone-a | --map-zone-a | #78838a | Area A |
+| Map/zone-b | --map-zone-b | #c6a052 | Area B |
+| Map/zone-c | --map-zone-c | #4f9b7a | Area C |
 
 ### Rules
 
 - Accent is for commands, focus, and selected state only.
 - Status colors encode state, never decoration.
+- Badges and metadata use square or low-radius labels, not pill overload.
 - No raw colors outside `DESIGN.md` and CSS token declarations.
 
 ## 3. Typography
@@ -52,8 +55,8 @@ A quiet mission command surface for one operator supervising many attritable UxV
 
 ### Font Stack
 
-- Primary: Inter Variable, SF Pro Display, system-ui, sans-serif
-- Mono: Berkeley Mono, ui-monospace, SFMono-Regular, Menlo, monospace
+- Primary: Aptos, SF Pro Text, Helvetica Neue, sans-serif
+- Mono: Cascadia Mono, Berkeley Mono, ui-monospace, SFMono-Regular, Menlo, monospace
 
 ### Rules
 
@@ -79,8 +82,8 @@ All spacing derives from a 4px base.
 
 ### Grid
 
-- Main shell: top status strip plus three-column desktop workspace.
-- Desktop columns: 280px left, minmax(420px, 1fr) map, 360px right.
+- Main shell: mission rail plus three-column desktop workspace.
+- Desktop columns: 296px mission rail, minmax(520px, 1fr) map, 388px decision queue.
 - Tablet: two columns, map first, side panels below.
 - Mobile: single column with sticky mission strip.
 
@@ -92,13 +95,13 @@ All spacing derives from a 4px base.
 
 ## 5. Components
 
-### Metric Tile
-- **Structure**: label, mono value, delta text, progress rail.
+### Metabolism Cell
+- **Structure**: compact label, mono value, target/context line, progress rail.
 - **Variants**: neutral, success, warning, danger.
-- **Spacing**: --space-3 inner, --space-2 between text rows.
+- **Spacing**: --space-4 inner, --space-2 between text rows.
 - **States**: default, hover, focus when interactive.
 - **Accessibility**: value and delta are text, not color-only.
-- **Motion**: value changes use 150ms opacity/transform.
+- **Motion**: value changes use 150ms opacity only.
 
 ### Command Button
 - **Structure**: lucide icon plus label.
@@ -108,13 +111,21 @@ All spacing derives from a 4px base.
 - **Accessibility**: native button, visible focus ring, aria-label for icon-only cases.
 - **Motion**: active translates 1px on y-axis.
 
-### Recommendation Card
-- **Structure**: severity rail, title, cause chips, action list, KPI deltas, decision controls.
+### Decision Card
+- **Structure**: severity rail, title, cause line, action table, KPI deltas, decision controls.
 - **Variants**: high, critical, resolved.
 - **Spacing**: --space-4 inner, --space-3 between sections.
 - **States**: pending, approved, rejected, manual.
 - **Accessibility**: decision buttons remain keyboard reachable.
 - **Motion**: card status changes use border and opacity transition.
+
+### Mission Rail
+- **Structure**: mission clock, objective, constraints, event injection, capability fabric.
+- **Variants**: normal, scripted demo running, degraded.
+- **Spacing**: --space-4 panel padding, --space-3 control rows.
+- **States**: command buttons default, hover, active, focus, disabled.
+- **Accessibility**: native controls and visible focus.
+- **Motion**: no decorative motion.
 
 ### Capability Bar
 - **Structure**: capability label, value, rail, deficit marker.
@@ -125,12 +136,12 @@ All spacing derives from a 4px base.
 - **Motion**: transform/width transition on rail fill.
 
 ### COP Map
-- **Structure**: SVG areas, risk zones, asset glyphs, route lines, legend.
-- **Variants**: normal, jammed, no-go.
-- **Spacing**: fills map panel, stable aspect ratio.
-- **States**: hover asset, selected event.
+- **Structure**: coordinate grid, sector polygons, sector MCC tags, relay routes, threat rings, no-go hatching, asset glyphs, legend, and compact readout.
+- **Variants**: normal, 전자전 압력, no-go, degraded asset.
+- **Spacing**: fills map panel, stable aspect ratio, readout below the map frame.
+- **States**: threat/no-go overlays are data-driven, not decorative; asset status changes via ring color and opacity.
 - **Accessibility**: labelled region and text fallback summary.
-- **Motion**: asset drift uses transform only and respects reduced motion.
+- **Motion**: no decorative drift; asset movement uses transform only when simulator state changes and respects reduced motion.
 
 ### Black Box Row
 - **Structure**: timestamp, kind badge, summary.
@@ -148,7 +159,7 @@ All spacing derives from a 4px base.
 | Standard | 180ms | ease-in-out | Panel and card state |
 | Data | 240ms | cubic-bezier(0.16, 1, 0.3, 1) | Metric recovery and map updates |
 
-- Only `transform`, `opacity`, and rail `width` animate.
+- Only `opacity`, color, border, and rail `width` animate.
 - Respect `prefers-reduced-motion`.
 - Motion must indicate state change or affordance.
 
@@ -166,5 +177,5 @@ Mixed tonal shift and subtle borders.
 | Elevated | --surface-elevated + border strong | Recommendation cards and controls |
 
 - Shadows are minimal and used only for popover-like elevation.
-- Border radius: 8px panels/cards, 6px controls, 999px pills.
+- Border radius: 8px panels/cards, 6px controls, 4px labels. Avoid pill badges except meter rails and asset dots.
 - No decorative orbs, bokeh, or gradient blobs.

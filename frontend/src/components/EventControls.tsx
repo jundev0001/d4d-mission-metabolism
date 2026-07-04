@@ -1,5 +1,5 @@
 import { BatteryWarning, Bell, MapPinOff, Radio, Satellite, WifiOff } from "lucide-react"
-import { eventLabel } from "../format"
+import { eventLabel, targetLabel } from "../format"
 import { useMissionStore } from "../store"
 import type { EventPayload } from "../types"
 
@@ -21,10 +21,10 @@ export function EventControls() {
   const injectEvent = useMissionStore((state) => state.injectEvent)
 
   return (
-    <section className="panel">
+    <section className="panel event-panel">
       <div className="panel-title">
-        <span>Event Injector</span>
-        <span className="caption">script-safe</span>
+        <span>시나리오 이벤트</span>
+        <span className="caption">안전 스크립트</span>
       </div>
       <div className="event-grid">
         {EVENTS.map((event) => (
@@ -35,7 +35,10 @@ export function EventControls() {
             onClick={() => void injectEvent(event)}
           >
             {event.icon}
-            <span>{eventLabel(event.event_type)}</span>
+            <span className="event-copy">
+              <span>{eventLabel(event.event_type)}</span>
+              <span className="caption">{targetLabel(event.target)}</span>
+            </span>
           </button>
         ))}
       </div>

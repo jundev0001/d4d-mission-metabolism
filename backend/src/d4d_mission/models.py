@@ -41,17 +41,14 @@ class CapabilityVector(StrictModel):
     reserve: float = Field(ge=0, le=1)
 
     def value_for(self, capability: CapabilityName) -> float:
-        match capability:
-            case CapabilityName.VISUAL_RECON:
-                return self.visual_recon
-            case CapabilityName.RELAY:
-                return self.relay
-            case CapabilityName.OVERWATCH:
-                return self.overwatch
-            case CapabilityName.GPS_DENIED_NAV:
-                return self.gps_denied_nav
-            case CapabilityName.RESERVE:
-                return self.reserve
+        values = {
+            CapabilityName.VISUAL_RECON: self.visual_recon,
+            CapabilityName.RELAY: self.relay,
+            CapabilityName.OVERWATCH: self.overwatch,
+            CapabilityName.GPS_DENIED_NAV: self.gps_denied_nav,
+            CapabilityName.RESERVE: self.reserve,
+        }
+        return values[capability]
 
 
 class Point(StrictModel):
@@ -81,17 +78,14 @@ class CapabilityDemand(StrictModel):
     reserve: float = Field(ge=0)
 
     def required_for(self, capability: CapabilityName) -> float:
-        match capability:
-            case CapabilityName.VISUAL_RECON:
-                return self.visual_recon
-            case CapabilityName.RELAY:
-                return self.relay
-            case CapabilityName.OVERWATCH:
-                return self.overwatch
-            case CapabilityName.GPS_DENIED_NAV:
-                return self.gps_denied_nav
-            case CapabilityName.RESERVE:
-                return self.reserve
+        requirements = {
+            CapabilityName.VISUAL_RECON: self.visual_recon,
+            CapabilityName.RELAY: self.relay,
+            CapabilityName.OVERWATCH: self.overwatch,
+            CapabilityName.GPS_DENIED_NAV: self.gps_denied_nav,
+            CapabilityName.RESERVE: self.reserve,
+        }
+        return requirements[capability]
 
 
 class MissionConstraints(StrictModel):

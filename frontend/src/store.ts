@@ -53,7 +53,7 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
       const replay = await fetchReplay()
       set({ dashboard, replay: replay.entries, isLoading: false, lastError: null })
     } catch (error) {
-      set({ isLoading: false, lastError: errorMessage(error) })
+      set({ isLoading: false, lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
     }
   },
 
@@ -67,7 +67,7 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
       const replay = await fetchReplay()
       set({ dashboard, replay: replay.entries, selectedReplayIndex: 0, lastError: null })
     } catch (error) {
-      set({ lastError: errorMessage(error) })
+      set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
     }
   },
 
@@ -77,7 +77,7 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
       const replay = await fetchReplay()
       set({ dashboard, replay: replay.entries, lastError: null })
     } catch (error) {
-      set({ lastError: errorMessage(error) })
+      set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
     }
   },
 
@@ -87,7 +87,7 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
       const replay = await fetchReplay()
       set({ dashboard, replay: replay.entries, lastError: null })
     } catch (error) {
-      set({ lastError: errorMessage(error) })
+      set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
     }
   },
 
@@ -103,7 +103,7 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
         Promise.resolve(),
       )
     } catch (error) {
-      set({ lastError: errorMessage(error) })
+      set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
     } finally {
       set({ isRunningDemo: false })
     }
@@ -127,12 +127,7 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
   },
 }))
 
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message
-  }
-  return "Unknown dashboard error"
-}
+const UNKNOWN_ERROR = "Unknown dashboard error"
 
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {

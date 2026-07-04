@@ -1,0 +1,242 @@
+.map-panel {
+  min-height: 560px;
+}
+
+.cop-frame {
+  margin-top: var(--space-3);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface-inset);
+}
+
+.cop-map {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1.18;
+}
+
+.map-bg {
+  fill: var(--surface-inset);
+}
+
+.map-grid-fill {
+  fill: url(#grid-major);
+  opacity: 0.58;
+}
+
+.grid-pattern {
+  fill: none;
+  stroke: var(--border-subtle);
+  stroke-width: 0.35;
+}
+
+.grid-axis line {
+  stroke: var(--border-subtle);
+  stroke-width: 0.18;
+}
+
+.route-line {
+  fill: none;
+  stroke-width: 0.55;
+  stroke-linecap: square;
+  stroke-dasharray: 3 2;
+}
+
+.route-primary {
+  stroke: color-mix(in srgb, var(--accent-primary) 72%, transparent);
+}
+
+.route-secondary {
+  stroke: color-mix(in srgb, var(--status-info) 62%, transparent);
+}
+
+.relay-node {
+  fill: var(--accent-primary);
+  stroke: var(--surface-base);
+  stroke-width: 0.65;
+}
+
+.sector-fill {
+  fill-opacity: 0.14;
+  stroke: none;
+}
+
+.sector-outline {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 0.5;
+}
+
+.sector-a .sector-fill {
+  fill: var(--map-zone-a);
+}
+
+.sector-b .sector-fill {
+  fill: var(--map-zone-b);
+}
+
+.sector-c .sector-fill {
+  fill: var(--map-zone-c);
+}
+
+.sector.healthy .sector-outline {
+  stroke: color-mix(in srgb, var(--status-success) 42%, var(--border-strong));
+}
+
+.sector.strained .sector-outline {
+  stroke: color-mix(in srgb, var(--status-warning) 58%, var(--border-strong));
+}
+
+.sector.deficit .sector-outline {
+  stroke: color-mix(in srgb, var(--status-danger) 66%, var(--border-strong));
+}
+
+.no-go-area {
+  fill: url(#no-go-hatch);
+  stroke: var(--status-danger);
+  stroke-width: 0.85;
+}
+
+.hatch-line {
+  stroke: var(--status-danger);
+  stroke-width: 0.42;
+}
+
+.threat-ring circle {
+  fill: none;
+  stroke: var(--status-warning);
+  stroke-dasharray: 2.5 2;
+  stroke-width: 0.55;
+}
+
+.map-label,
+.map-metric,
+.asset-label {
+  font-family:
+    Cascadia Mono,
+    Berkeley Mono,
+    ui-monospace,
+    monospace;
+  paint-order: stroke;
+  stroke: var(--surface-inset);
+  stroke-width: 1.6;
+}
+
+.map-label {
+  fill: var(--text-secondary);
+  font-size: 3.1px;
+  font-weight: 590;
+}
+
+.map-metric {
+  fill: var(--text-muted);
+  font-size: 2.35px;
+}
+
+.asset {
+  color: var(--accent-hover);
+}
+
+.asset-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.55;
+  opacity: 0.7;
+}
+
+.asset-core {
+  fill: currentColor;
+  stroke: var(--surface-base);
+  stroke-width: 0.42;
+}
+
+.asset-uav {
+  color: var(--accent-hover);
+}
+
+.asset-ugv {
+  color: var(--status-success);
+}
+
+.asset-synthetic {
+  color: var(--text-muted);
+}
+
+.asset-synthetic .asset-ring {
+  opacity: 0.24;
+}
+
+.asset.degraded .asset-ring {
+  stroke: var(--status-warning);
+  stroke-width: 0.75;
+}
+
+.asset.stressed .asset-ring,
+.asset.lost .asset-ring {
+  stroke: var(--status-danger);
+  stroke-width: 0.9;
+}
+
+.asset.returning,
+.asset.standby {
+  opacity: 0.62;
+}
+
+.asset.lost {
+  opacity: 0.38;
+}
+
+.asset-label {
+  fill: var(--text-secondary);
+  font-size: 2.65px;
+}
+
+.cop-readout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cop-readout span {
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--surface-inset);
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-legend {
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: var(--space-1);
+  border-radius: 8px;
+  background: currentColor;
+}
+
+.jammer-dot {
+  color: var(--status-warning);
+}
+
+.no-go-dot {
+  color: var(--status-danger);
+  border-radius: 2px;
+}

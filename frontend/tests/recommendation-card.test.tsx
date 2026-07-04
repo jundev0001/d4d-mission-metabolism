@@ -8,7 +8,7 @@ describe("recommendation card", () => {
     const onDecision = vi.fn()
 
     render(<RecommendationCardView card={makeRecommendationCard()} onDecision={onDecision} />)
-    screen.getByRole("button", { name: /approve/i }).click()
+    screen.getByRole("button", { name: "승인" }).click()
 
     expect(onDecision).toHaveBeenCalledWith("approve")
   })
@@ -17,7 +17,7 @@ describe("recommendation card", () => {
     const onDecision = vi.fn()
 
     render(<RecommendationCardView card={makeRecommendationCard()} onDecision={onDecision} />)
-    fireEvent.click(screen.getByRole("button", { name: /manual/i }))
+    fireEvent.click(screen.getByRole("button", { name: "수동" }))
 
     expect(onDecision).toHaveBeenCalledWith("manual", "replace", "UxV-04")
   })

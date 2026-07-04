@@ -24,7 +24,7 @@ export function App() {
       <main className="boot-screen">
         <div className="boot-panel" role="status">
           <span className="pulse-dot" />
-          Initializing mission fabric
+          임무 능력망 초기화 중
         </div>
       </main>
     )
@@ -35,7 +35,7 @@ export function App() {
       <Header />
       {error ? <div className="error-banner">{error}</div> : null}
       <MetricStrip />
-      <section className="workspace" aria-label="Mission decision workspace">
+      <section className="workspace" aria-label="임무 판단 작업면">
         <aside className="left-rail">
           <EventControls />
           <CapabilityPanel />

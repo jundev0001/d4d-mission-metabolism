@@ -15,35 +15,40 @@ export function EvaluationPanel() {
   return (
     <section className="panel evaluation-panel" data-testid="evaluation-panel">
       <div className="panel-title">
-        <span>A/B Evaluation</span>
+        <span>기준 대비 지원</span>
         <BarChart3 size={16} aria-hidden="true" />
       </div>
-      <div className="comparison-grid">
-        <ComparisonMetric
-          label="Operator actions"
-          baseline={`${baseline}`}
-          assisted={`${assisted}`}
-        />
-        <ComparisonMetric
-          label="Replan time"
-          baseline="46s"
-          assisted={`${dashboard.metrics.replan_time_seconds.toFixed(0)}s`}
-        />
-        <ComparisonMetric
-          label="Collapse risk"
-          baseline="64%"
-          assisted={formatPercent(dashboard.metrics.collapse_probability)}
-        />
-        <ComparisonMetric
-          label="Risk reduced"
-          baseline="0pp"
-          assisted={`${Math.round(collapseReduction * 100)}pp`}
-        />
-      </div>
+      <table className="comparison-table">
+        <thead>
+          <tr>
+            <th scope="col">지표</th>
+            <th scope="col">기준</th>
+            <th scope="col">지원</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ComparisonMetric label="운용자 조작" baseline={`${baseline}`} assisted={`${assisted}`} />
+          <ComparisonMetric
+            label="재계획 시간"
+            baseline="46s"
+            assisted={`${dashboard.metrics.replan_time_seconds.toFixed(0)}s`}
+          />
+          <ComparisonMetric
+            label="붕괴 위험"
+            baseline="64%"
+            assisted={formatPercent(dashboard.metrics.collapse_probability)}
+          />
+          <ComparisonMetric
+            label="위험 감소"
+            baseline="0pp"
+            assisted={`${Math.round(collapseReduction * 100)}pp`}
+          />
+        </tbody>
+      </table>
       <div className="ccr-band">
-        <span>CCR internal</span>
+        <span>CCR 내부</span>
         <strong>{dashboard.metrics.ccr_internal.toFixed(1)}x</strong>
-        <span>System micro-actions per human intent</span>
+        <span>사람 승인당 시스템 마이크로 액션</span>
       </div>
     </section>
   )
@@ -55,12 +60,12 @@ function ComparisonMetric(props: {
   readonly assisted: string
 }) {
   return (
-    <article className="comparison-card">
-      <span>{props.label}</span>
-      <div>
-        <small>Baseline {props.baseline}</small>
-        <strong>Assisted {props.assisted}</strong>
-      </div>
-    </article>
+    <tr>
+      <th scope="row">{props.label}</th>
+      <td>{props.baseline}</td>
+      <td>
+        <strong>{props.assisted}</strong>
+      </td>
+    </tr>
   )
 }
