@@ -24,11 +24,13 @@ type MapAssetGlyphProps = {
   readonly active: boolean
   readonly onActiveChange: (vehicleId: string | null) => void
   readonly onOpenMenu: (request: AssetMenuRequest) => void
+  readonly overlayScale: number
   readonly vehicle: Vehicle
 }
 
 type MapAssetInfoCardProps = {
   readonly active: boolean
+  readonly overlayScale: number
   readonly vehicle: Vehicle
 }
 
@@ -38,7 +40,13 @@ export type AssetMenuRequest = {
   readonly vehicle: Vehicle
 }
 
-export function MapAssetGlyph({ active, onActiveChange, onOpenMenu, vehicle }: MapAssetGlyphProps) {
+export function MapAssetGlyph({
+  active,
+  onActiveChange,
+  onOpenMenu,
+  overlayScale,
+  vehicle,
+}: MapAssetGlyphProps) {
   const availability = assetAvailability(vehicle)
   const readiness = availability >= 0.72 ? "ready" : availability >= 0.45 ? "degraded" : "stressed"
   const className = `asset ${AIR_VEHICLE_TYPES.has(vehicle.type) ? "asset-uav" : ""} ${
@@ -56,6 +64,7 @@ export function MapAssetGlyph({ active, onActiveChange, onOpenMenu, vehicle }: M
       data-asset-id={vehicle.id}
       focusable="true"
       tabIndex={0}
+      transform={`translate(${vehicle.position.x} ${vehicle.position.y}) scale(${overlayScale})`}
       onBlur={() => onActiveChange(null)}
       onFocus={() => onActiveChange(vehicle.id)}
       onMouseEnter={() => onActiveChange(vehicle.id)}
@@ -63,21 +72,11 @@ export function MapAssetGlyph({ active, onActiveChange, onOpenMenu, vehicle }: M
       onContextMenu={(event) => openMenuForAsset({ event, onOpenMenu, vehicle })}
     >
       <title>{assetDescription(vehicle, availability)}</title>
-      <circle
-        className="asset-hitbox"
-        cx={vehicle.position.x}
-        cy={vehicle.position.y}
-        r={radius + 3.3}
-      />
-      <circle
-        className="asset-ring"
-        cx={vehicle.position.x}
-        cy={vehicle.position.y}
-        r={radius + 0.82}
-      />
-      <circle className="asset-core" cx={vehicle.position.x} cy={vehicle.position.y} r={radius} />
+      <circle className="asset-hitbox" cx="0" cy="0" r={radius + 3.3} />
+      <circle className="asset-ring" cx="0" cy="0" r={radius + 0.82} />
+      <circle className="asset-core" cx="0" cy="0" r={radius} />
       {!vehicle.synthetic ? (
-        <text x={vehicle.position.x + 2.05} y={vehicle.position.y + 0.9} className="asset-label">
+        <text x="2.05" y="0.9" className="asset-label">
           {vehicle.id}
         </text>
       ) : null}
@@ -99,14 +98,14 @@ function openMenuForAsset({
   onOpenMenu({ clientX: event.clientX, clientY: event.clientY, vehicle })
 }
 
-export function MapAssetInfoCard({ active, vehicle }: MapAssetInfoCardProps) {
+export function MapAssetInfoCard({ active, overlayScale, vehicle }: MapAssetInfoCardProps) {
   const availability = assetAvailability(vehicle)
   const offset = infoOffsetFor(vehicle)
   return (
     <g
       className={`asset-info ${active ? "visible" : ""}`}
       data-asset-info-id={vehicle.id}
-      transform={`translate(${vehicle.position.x + offset.x} ${vehicle.position.y + offset.y})`}
+      transform={`translate(${vehicle.position.x} ${vehicle.position.y}) scale(${overlayScale}) translate(${offset.x} ${offset.y})`}
     >
       <rect className="asset-info-bg" x="0" y="0" width="38" height="22" rx="1.5" />
       <text className="asset-info-title" x="2.2" y="4.8">

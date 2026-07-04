@@ -16,6 +16,7 @@
   width: 100%;
   aspect-ratio: 1.18;
   cursor: grab;
+  font-family: var(--font-primary);
   touch-action: none;
   user-select: none;
 }
@@ -119,27 +120,23 @@
 }
 
 .map-label,
-.map-metric,
 .asset-label {
-  font-family:
-    Cascadia Mono,
-    Berkeley Mono,
-    ui-monospace,
-    monospace;
+  font-variant-numeric: tabular-nums;
   paint-order: stroke;
   stroke: var(--surface-inset);
   stroke-width: 1.6;
+}
+
+.map-label-layer,
+.map-area-label {
+  pointer-events: none;
 }
 
 .map-label {
   fill: var(--text-secondary);
   font-size: 3.1px;
   font-weight: 590;
-}
-
-.map-metric {
-  fill: var(--text-muted);
-  font-size: 2.35px;
+  text-anchor: middle;
 }
 
 .asset {
@@ -235,11 +232,7 @@
 
 .asset-info-title,
 .asset-info-line {
-  font-family:
-    Cascadia Mono,
-    Berkeley Mono,
-    ui-monospace,
-    monospace;
+  font-variant-numeric: tabular-nums;
   paint-order: stroke;
   stroke: var(--surface-panel);
   stroke-width: 0.7;
@@ -355,7 +348,7 @@
 
 .cop-readout {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
   gap: var(--space-2);
   margin-top: var(--space-3);
   min-inline-size: 0;
@@ -374,6 +367,10 @@
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.area-coverage-chip {
+  color: var(--text-primary);
 }
 
 .map-legend {

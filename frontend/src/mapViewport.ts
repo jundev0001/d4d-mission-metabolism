@@ -29,6 +29,10 @@ export function formatViewBox(viewBox: MapViewBox): string {
   )} ${roundMapValue(viewBox.height)}`
 }
 
+export function overlayScaleForViewBox(viewBox: MapViewBox): number {
+  return viewBox.width / DEFAULT_MAP_VIEW_BOX.width
+}
+
 export function panViewBox(request: {
   readonly clientX: number
   readonly clientY: number

@@ -1,11 +1,15 @@
 import { areaPath, type CustomMapArea } from "../customScenario"
-import { formatPercent } from "../format"
 
 type MapAreaSectorProps = {
   readonly area: CustomMapArea
   readonly minimumCoverage: number
   readonly noGo: boolean
   readonly threat: number
+}
+
+type MapAreaLabelProps = {
+  readonly area: CustomMapArea
+  readonly overlayScale: number
 }
 
 export function MapAreaSector(props: MapAreaSectorProps) {
@@ -27,15 +31,18 @@ export function MapAreaSector(props: MapAreaSectorProps) {
           <circle cx={props.area.threat_position.x} cy={props.area.threat_position.y} r="18" />
         </g>
       ) : null}
-      <text x={props.area.label_position.x} y={props.area.label_position.y} className="map-label">
-        {props.area.label}
-      </text>
-      <text
-        x={props.area.metric_position.x}
-        y={props.area.metric_position.y}
-        className="map-metric"
-      >
-        최저 {formatPercent(props.minimumCoverage)}
+    </g>
+  )
+}
+
+export function MapAreaLabel({ area, overlayScale }: MapAreaLabelProps) {
+  return (
+    <g
+      className="map-area-label"
+      transform={`translate(${area.label_position.x} ${area.label_position.y}) scale(${overlayScale})`}
+    >
+      <text className="map-label" x="0" y="0">
+        {area.label}
       </text>
     </g>
   )
