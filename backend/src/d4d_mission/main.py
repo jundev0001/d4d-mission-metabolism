@@ -13,6 +13,7 @@ from d4d_mission.deployment import DeploymentCount, DeploymentError
 from d4d_mission.immune import ManualActionError, RecommendationNotFoundError
 from d4d_mission.models import (
     AllocationResponse,
+    CapabilityGapReport,
     CapabilityReport,
     DashboardState,
     DecisionRequest,
@@ -87,6 +88,10 @@ def create_app() -> FastAPI:
     @app.post("/capability/compute", response_model=CapabilityReport)
     async def capability_compute() -> CapabilityReport:
         return runtime.capability_report()
+
+    @app.post("/capability/gaps", response_model=CapabilityGapReport)
+    async def capability_gaps() -> CapabilityGapReport:
+        return runtime.capability_gaps()
 
     @app.post("/allocate", response_model=AllocationResponse)
     async def allocate() -> AllocationResponse:

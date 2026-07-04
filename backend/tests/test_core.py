@@ -5,7 +5,13 @@ from d4d_mission.immune_cards import build_recommendation
 from d4d_mission.metabolism import _relay_redundancy, evaluate_metrics
 from d4d_mission.models import DecisionRequest, EventRequest
 from d4d_mission.scenario import apply_event_to_snapshot, create_initial_snapshot
-from d4d_mission.types import DEPLOYABLE_VEHICLE_TYPES, MISSION_TYPES, DecisionAction, EventType
+from d4d_mission.types import (
+    DEPLOYABLE_VEHICLE_TYPES,
+    MISSION_TYPES,
+    DecisionAction,
+    EventType,
+    MicroActionType,
+)
 
 
 def test_catalog_contains_mission_and_vehicle_type_vectors() -> None:
@@ -104,3 +110,41 @@ def test_tactical_immune_card_has_explainable_actions_and_kpi_delta() -> None:
     assert card.expected_effect.mcc_delta > 0
     assert card.expected_effect.collapse_probability_delta < 0
     assert card.expected_effect.autonomy_debt_delta < 0
+
+
+def test_tactical_immune_builds_cards_for_recommended_events() -> None:
+    snapshot = create_initial_snapshot(seed=19)
+    cases = {
+        EventType.DATA_STALE: ("B", MicroActionType.MARK_AREA_STALE),
+        EventType.TARGET_DETECTED: ("B", MicroActionType.HANDOFF_TARGET),
+        EventType.MOBILITY_BLOCKED: ("UxV-05", MicroActionType.REROUTE),
+        EventType.WEATHER_DEGRADED: ("C", MicroActionType.SWITCH_SENSOR_MODE),
+        EventType.COLLISION_RISK: ("UxV-03", MicroActionType.DECONFLICT_PATHS),
+        EventType.SENSOR_CONFIDENCE_DROP: ("UxV-01", MicroActionType.SWITCH_SENSOR_MODE),
+        EventType.ASSET_ADDED: ("A", MicroActionType.LAUNCH_RESERVE),
+        EventType.RESERVE_DEPLETED: ("B", MicroActionType.DOWNGRADE_OBJECTIVE),
+    }
+
+    for event_type, (target, expected_action) in cases.items():
+        card = build_recommendation(
+            snapshot=snapshot,
+            event=EventRequest(event_type=event_type, target=target, severity=0.7),
+        )
+
+        assert any(action.action == expected_action for action in card.actions)
+
+
+def test_new_immune_action_approval_recomputes_metrics() -> None:
+    snapshot = create_initial_snapshot(seed=23)
+    event = EventRequest(event_type=EventType.TARGET_DETECTED, target="B", severity=0.8)
+    card = build_recommendation(snapshot=snapshot, event=event)
+    stressed = apply_event_to_snapshot(snapshot=snapshot, event=event, recommendation=card)
+
+    approved = decide_recommendation(
+        snapshot=stressed,
+        request=DecisionRequest(recommendation_id=card.id, action=DecisionAction.APPROVE),
+    )
+
+    assert approved.recommendations[0].status == "approved"
+    assert approved.system_micro_actions > stressed.system_micro_actions
+    assert approved.metrics.approval_count == 1

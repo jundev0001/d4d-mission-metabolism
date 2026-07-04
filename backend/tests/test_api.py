@@ -77,6 +77,27 @@ def test_api_mission_event_decision_and_replay_flow() -> None:
     assert resolved_cards[0]["status"] == "approved"
 
 
+def test_api_capability_gaps_rank_after_vehicle_loss() -> None:
+    client = TestClient(create_app())
+
+    healthy = client.post("/capability/gaps")
+    assert healthy.status_code == 200
+    assert not any(
+        gap["area"] == "B" and gap["capability"] == "relay" for gap in healthy.json()["gaps"]
+    )
+
+    loss = client.post(
+        "/event/inject",
+        json={"event_type": EventType.VEHICLE_LOST, "target": "UxV-04", "severity": 0.9},
+    )
+    assert loss.status_code == 200
+
+    gaps = client.post("/capability/gaps").json()["gaps"]
+    relay_b = [gap for gap in gaps if gap["area"] == "B" and gap["capability"] == "relay"]
+    assert len(relay_b) == 1
+    assert relay_b[0]["deficit_ratio"] > 0
+
+
 def test_api_rejects_invalid_event_type_and_unknown_vehicle() -> None:
     client = TestClient(create_app())
 
@@ -102,3 +123,21 @@ def test_api_rejects_empty_deployment() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_api_accepts_new_tactical_immune_event_targets() -> None:
+    client = TestClient(create_app())
+
+    area_event = client.post(
+        "/event/inject",
+        json={"event_type": EventType.DATA_STALE, "target": "A", "severity": 0.65},
+    )
+    assert area_event.status_code == 200
+    assert area_event.json()["recommendations"][0]["actions"][0]["action"] == "mark_area_stale"
+
+    vehicle_event = client.post(
+        "/event/inject",
+        json={"event_type": EventType.MOBILITY_BLOCKED, "target": "UxV-05", "severity": 0.7},
+    )
+    assert vehicle_event.status_code == 200
+    assert vehicle_event.json()["recommendations"][0]["actions"][0]["action"] == "reroute"
