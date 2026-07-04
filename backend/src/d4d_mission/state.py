@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from d4d_mission.blackbox import JsonlBlackBox
+from d4d_mission.capability_gap import analyze_capability_gaps
 from d4d_mission.immune import (
     ManualActionError,
     RecommendationNotFoundError,
@@ -15,6 +16,7 @@ from d4d_mission.immune import (
 from d4d_mission.immune_cards import build_recommendation
 from d4d_mission.models import (
     AllocationResponse,
+    CapabilityGapReport,
     CapabilityReport,
     DashboardState,
     DecisionRequest,
@@ -92,6 +94,15 @@ class MissionRuntime:
 
     def capability_report(self) -> CapabilityReport:
         return self._snapshot.capability_report
+
+    def capability_gaps(self) -> CapabilityGapReport:
+        return CapabilityGapReport(
+            gaps=analyze_capability_gaps(
+                vehicles=self._snapshot.vehicles,
+                mission=self._snapshot.mission,
+                assignments=self._snapshot.assignments,
+            ),
+        )
 
     def allocation(self) -> AllocationResponse:
         explanations = (

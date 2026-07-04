@@ -159,6 +159,22 @@ class CapabilityReport(StrictModel):
     deficit_score: float = Field(ge=0, le=1)
 
 
+class CapabilityGap(StrictModel):
+    area: AreaId
+    capability: CapabilityName
+    demand: float = Field(ge=0)
+    supply: float = Field(ge=0)
+    deficit_ratio: float = Field(ge=0, le=1)
+    deficit_absolute: float = Field(ge=0)
+    contributor_count: int = Field(ge=0)
+    single_point: bool
+    priority: float = Field(ge=0)
+
+
+class CapabilityGapReport(StrictModel):
+    gaps: tuple[CapabilityGap, ...]
+
+
 class MetricSnapshot(StrictModel):
     mcc: float = Field(ge=0, le=1)
     strain: float = Field(ge=0, le=1)

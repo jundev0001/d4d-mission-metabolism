@@ -80,10 +80,14 @@ def _manual_decision(
 ) -> DashboardState:
     if request.vehicle_id is None or request.manual_action is None:
         raise ManualActionError(recommendation_id=request.recommendation_id)
+    vehicle_area = next(
+        (vehicle.area for vehicle in snapshot.vehicles if vehicle.id == request.vehicle_id),
+        snapshot.mission.areas[0],
+    )
     manual = MicroAction(
         vehicle_id=request.vehicle_id,
         action=request.manual_action,
-        area="B",
+        area=vehicle_area,
         rationale="manual operator override from safe action list",
     )
     vehicles, assignments = apply_micro_action(

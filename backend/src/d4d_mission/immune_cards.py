@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from d4d_mission.capability_gap import analyze_capability_gaps
 from d4d_mission.immune_card_helpers import best_vehicle_for, card_action, make_card
 from d4d_mission.models import (
+    CapabilityGap,
     DashboardState,
     EventRequest,
     RecommendationCard,
 )
-from d4d_mission.types import CapabilityName, EventType, MicroActionType
+from d4d_mission.types import CapabilityName, EventType, MicroActionType, VehicleStatus
 
 type CardBuilder = Callable[[str, DashboardState, EventRequest], RecommendationCard]
 
@@ -37,36 +39,84 @@ def build_recommendation(snapshot: DashboardState, event: EventRequest) -> Recom
     return builders[event.event_type](card_id, snapshot, event)
 
 
+def _resolve_area(
+    snapshot: DashboardState,
+    event: EventRequest,
+    gaps: tuple[CapabilityGap, ...],
+) -> str:
+    if event.target in snapshot.mission.areas:
+        return event.target
+    for vehicle in snapshot.vehicles:
+        if vehicle.id == event.target:
+            return vehicle.area
+    if len(gaps) > 0:
+        return gaps[0].area
+    return snapshot.mission.areas[0]
+
+
+def _focus(snapshot: DashboardState, event: EventRequest) -> tuple[str, CapabilityGap | None]:
+    gaps = analyze_capability_gaps(
+        vehicles=snapshot.vehicles,
+        mission=snapshot.mission,
+        assignments=snapshot.assignments,
+    )
+    area = _resolve_area(snapshot=snapshot, event=event, gaps=gaps)
+    gap = next((item for item in gaps if item.area == area), None)
+    return area, gap
+
+
+def _weakest_comm_in_area(
+    snapshot: DashboardState,
+    area: str,
+    exclude: frozenset[str],
+) -> str | None:
+    candidates = [
+        vehicle
+        for vehicle in snapshot.vehicles
+        if vehicle.area == area
+        and vehicle.status != VehicleStatus.LOST
+        and not vehicle.synthetic
+        and vehicle.id not in exclude
+    ]
+    if len(candidates) == 0:
+        return None
+    candidates.sort(key=lambda vehicle: vehicle.health.comm)
+    return candidates[0].id
+
+
 def _comm_jam_card(
     card_id: str,
     snapshot: DashboardState,
     event: EventRequest,
 ) -> RecommendationCard:
-    relay = best_vehicle_for(
-        snapshot=snapshot,
-        capability=CapabilityName.RELAY,
-        fallback="UxV-04",
-    )
+    area, gap = _focus(snapshot=snapshot, event=event)
+    relay = best_vehicle_for(snapshot, CapabilityName.RELAY, prefer_area=area)
     reserve = best_vehicle_for(
-        snapshot=snapshot,
-        capability=CapabilityName.RESERVE,
-        fallback="UxV-06",
+        snapshot,
+        CapabilityName.RESERVE,
+        exclude=frozenset({relay}),
+        prefer_area=area,
     )
+    actions = [
+        card_action(relay, MicroActionType.REPOSITION_RELAY, area, "move relay to shadow edge"),
+        card_action(reserve, MicroActionType.REPLACE, area, "activate reserve before MCC drop"),
+    ]
+    weakest = _weakest_comm_in_area(
+        snapshot=snapshot,
+        area=area,
+        exclude=frozenset({relay, reserve}),
+    )
+    if weakest is not None:
+        actions.append(
+            card_action(weakest, MicroActionType.LOW_BANDWIDTH, area, "reduce degraded scout load"),
+        )
     return make_card(
         card_id=card_id,
-        title="B area mission instability",
+        title=f"{area} area mission instability",
         causes=("comm_jam", "relay_redundancy", "capability_deficit"),
         event=event,
-        actions=(
-            card_action(relay, MicroActionType.REPOSITION_RELAY, "B", "move relay to shadow edge"),
-            card_action(reserve, MicroActionType.REPLACE, "B", "activate reserve before MCC drop"),
-            card_action(
-                "UxV-03",
-                MicroActionType.LOW_BANDWIDTH,
-                "B",
-                "reduce degraded scout load",
-            ),
-        ),
+        actions=tuple(actions),
+        gap=gap,
     )
 
 
@@ -75,10 +125,12 @@ def _battery_card(
     snapshot: DashboardState,
     event: EventRequest,
 ) -> RecommendationCard:
+    area, gap = _focus(snapshot=snapshot, event=event)
     reserve = best_vehicle_for(
-        snapshot=snapshot,
-        capability=CapabilityName.RESERVE,
-        fallback="UxV-06",
+        snapshot,
+        CapabilityName.RESERVE,
+        exclude=frozenset({event.target}),
+        prefer_area=area,
     )
     return make_card(
         card_id=card_id,
@@ -92,8 +144,9 @@ def _battery_card(
                 None,
                 "preserve asset before exhaustion",
             ),
-            card_action(reserve, MicroActionType.REPLACE, "B", "fill short-recon deficit"),
+            card_action(reserve, MicroActionType.REPLACE, area, "fill short-recon deficit"),
         ),
+        gap=gap,
     )
 
 
@@ -102,10 +155,12 @@ def _comm_degraded_card(
     snapshot: DashboardState,
     event: EventRequest,
 ) -> RecommendationCard:
+    area, gap = _focus(snapshot=snapshot, event=event)
     relay = best_vehicle_for(
-        snapshot=snapshot,
-        capability=CapabilityName.RELAY,
-        fallback="UxV-04",
+        snapshot,
+        CapabilityName.RELAY,
+        exclude=frozenset({event.target}),
+        prefer_area=area,
     )
     return make_card(
         card_id=card_id,
@@ -113,36 +168,35 @@ def _comm_degraded_card(
         causes=("comm_degraded", "operator_load", "relay_gap"),
         event=event,
         actions=(
-            card_action(relay, MicroActionType.REPOSITION_RELAY, "B", "restore link margin"),
-            card_action(
-                event.target,
-                MicroActionType.LOW_BANDWIDTH,
-                "B",
-                "switch to packet mode",
-            ),
+            card_action(relay, MicroActionType.REPOSITION_RELAY, area, "restore link margin"),
+            card_action(event.target, MicroActionType.LOW_BANDWIDTH, area, "switch to packet mode"),
         ),
+        gap=gap,
     )
 
 
 def _gps_drop_card(
     card_id: str,
-    _snapshot: DashboardState,
+    snapshot: DashboardState,
     event: EventRequest,
 ) -> RecommendationCard:
+    _area, gap = _focus(snapshot=snapshot, event=event)
     return make_card(
         card_id=card_id,
         title=f"{event.target} GPS-denied fallback",
         causes=("gps_drop", "navigation_uncertainty"),
         event=event,
         actions=(card_action(event.target, MicroActionType.HOLD, None, "hold low-speed mode"),),
+        gap=gap,
     )
 
 
 def _sensor_fail_card(
     card_id: str,
-    _snapshot: DashboardState,
+    snapshot: DashboardState,
     event: EventRequest,
 ) -> RecommendationCard:
+    area, gap = _focus(snapshot=snapshot, event=event)
     return make_card(
         card_id=card_id,
         title=f"{event.target} sensor payload failed",
@@ -152,10 +206,11 @@ def _sensor_fail_card(
             card_action(
                 event.target,
                 MicroActionType.REPOSITION_RELAY,
-                "B",
+                area,
                 "convert scout into relay contribution",
             ),
         ),
+        gap=gap,
     )
 
 
@@ -164,10 +219,14 @@ def _vehicle_lost_card(
     snapshot: DashboardState,
     event: EventRequest,
 ) -> RecommendationCard:
-    reserve = best_vehicle_for(
-        snapshot=snapshot,
-        capability=CapabilityName.RESERVE,
-        fallback="UxV-06",
+    area, gap = _focus(snapshot=snapshot, event=event)
+    exclude = frozenset({event.target})
+    reserve = best_vehicle_for(snapshot, CapabilityName.RESERVE, exclude=exclude, prefer_area=area)
+    relay = best_vehicle_for(
+        snapshot,
+        CapabilityName.RELAY,
+        exclude=exclude | {reserve},
+        prefer_area=area,
     )
     return make_card(
         card_id=card_id,
@@ -178,16 +237,17 @@ def _vehicle_lost_card(
             card_action(
                 reserve,
                 MicroActionType.REPLACE,
-                "B",
+                area,
                 "nearest reserve takes lost coverage",
             ),
             card_action(
-                "UxV-04",
+                relay,
                 MicroActionType.REDISTRIBUTE_COVERAGE,
-                "B",
-                "rebalance B relay and overwatch coverage",
+                area,
+                "rebalance area relay and overwatch coverage",
             ),
         ),
+        gap=gap,
     )
 
 
@@ -213,10 +273,17 @@ def _alert_flood_card(
 
 
 def _no_go_card(card_id: str, snapshot: DashboardState, event: EventRequest) -> RecommendationCard:
-    reserve = best_vehicle_for(
-        snapshot=snapshot,
-        capability=CapabilityName.RESERVE,
-        fallback="UxV-06",
+    area, gap = _focus(snapshot=snapshot, event=event)
+    reserve = best_vehicle_for(snapshot, CapabilityName.RESERVE, prefer_area=area)
+    return make_card(
+        card_id=card_id,
+        title=f"{event.target} route constraint update",
+        causes=("no_go", "priority_shift", "human_gate"),
+        event=event,
+        actions=(
+            card_action(reserve, MicroActionType.REPLACE, area, "hold budget under route limits"),
+        ),
+        gap=gap,
     )
 
 
@@ -452,20 +519,6 @@ def _reserve_depleted_card(
                 MicroActionType.REQUEST_HUMAN_CONFIRM,
                 event.target,
                 "approve scope change",
-            ),
-        ),
-    )
-    return make_card(
-        card_id=card_id,
-        title=f"{event.target} route constraint update",
-        causes=("no_go", "priority_shift", "human_gate"),
-        event=event,
-        actions=(
-            card_action(
-                reserve,
-                MicroActionType.REPLACE,
-                "B",
-                "hold budget under route limits",
             ),
         ),
     )
