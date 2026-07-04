@@ -110,18 +110,20 @@ const CapabilityDemandSchema = z.object({
   reserve: NonNegative,
 })
 
+const MissionConstraintsSchema = z.object({
+  return_battery_threshold: Percent,
+  min_relay_redundancy: z.number().int().min(0),
+  human_approval_for_replan: z.boolean(),
+  target_mcc: Percent,
+})
+
 const MissionSchema = z.object({
   id: z.string(),
   mission_type: MissionTypeSchema,
   objective: z.string(),
   areas: z.array(z.string()),
   requirements: z.record(z.string(), CapabilityDemandSchema),
-  constraints: z.object({
-    return_battery_threshold: Percent,
-    min_relay_redundancy: z.number().int().min(0),
-    human_approval_for_replan: z.boolean(),
-    target_mcc: Percent,
-  }),
+  constraints: MissionConstraintsSchema,
   autonomy_level: Percent,
   area_threats: z.record(z.string(), Percent),
   area_priorities: z.record(z.string(), Percent),
@@ -210,6 +212,7 @@ export const DashboardStateSchema = z.object({
   vehicles: z.array(VehicleSchema),
   assignments: z.array(AssignmentSchema),
   metrics: MetricSnapshotSchema,
+  baseline_metrics: MetricSnapshotSchema,
   capability_report: CapabilityReportSchema,
   recommendations: z.array(RecommendationCardSchema),
   events: z.array(EventRecordSchema),
@@ -232,6 +235,7 @@ export type DecisionAction = z.infer<typeof DecisionActionSchema>
 export type MicroActionType = z.infer<typeof MicroActionTypeSchema>
 export type Point = z.infer<typeof PointSchema>
 export type CapabilityDemand = z.infer<typeof CapabilityDemandSchema>
+export type MissionConstraints = z.infer<typeof MissionConstraintsSchema>
 export type Vehicle = z.infer<typeof VehicleSchema>
 export type MetricSnapshot = z.infer<typeof MetricSnapshotSchema>
 export type RecommendationCard = z.infer<typeof RecommendationCardSchema>

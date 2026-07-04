@@ -1,7 +1,7 @@
 import type { MouseEvent as ReactMouseEvent } from "react"
 import { capabilityLabel, formatPercent, targetLabel } from "../format"
 import { mapAssetIconHref } from "../mapAssetIcons"
-import type { Vehicle } from "../types"
+import type { Point, Vehicle } from "../types"
 import { vehicleTypeLabel } from "../vehicleDeployment"
 
 const AIR_VEHICLE_TYPES = new Set([
@@ -23,6 +23,7 @@ type InfoOffset = {
 
 type MapAssetGlyphProps = {
   readonly active: boolean
+  readonly displayPosition: Point
   readonly onActiveChange: (vehicleId: string | null) => void
   readonly onOpenMenu: (request: AssetMenuRequest) => void
   readonly overlayScale: number
@@ -31,6 +32,7 @@ type MapAssetGlyphProps = {
 
 type MapAssetInfoCardProps = {
   readonly active: boolean
+  readonly displayPosition: Point
   readonly overlayScale: number
   readonly vehicle: Vehicle
 }
@@ -43,6 +45,7 @@ export type AssetMenuRequest = {
 
 export function MapAssetGlyph({
   active,
+  displayPosition,
   onActiveChange,
   onOpenMenu,
   overlayScale,
@@ -57,6 +60,14 @@ export function MapAssetGlyph({
   }`
   const radius = vehicle.synthetic ? 0.62 : 1.2
   const iconSize = vehicle.synthetic ? 3.4 : 4.8
+  const offsetX = displayPosition.x - vehicle.position.x
+  const offsetY = displayPosition.y - vehicle.position.y
+  const nearBottomEdge = displayPosition.y > 68
+  const labelOnLeft = offsetX < -0.5
+  const labelX = labelOnLeft ? -4.8 : offsetX > 0.5 ? 4.8 : 3.4
+  const labelY =
+    (offsetY < -0.5 || nearBottomEdge ? -4.0 : offsetY > 0.5 ? 5.8 : 1.1) +
+    labelStaggerFor(vehicle.id)
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: SVG map glyphs expose hover/focus details and context menu actions.
@@ -66,7 +77,7 @@ export function MapAssetGlyph({
       data-asset-id={vehicle.id}
       focusable="true"
       tabIndex={0}
-      transform={`translate(${vehicle.position.x} ${vehicle.position.y}) scale(${overlayScale})`}
+      transform={`translate(${displayPosition.x} ${displayPosition.y}) scale(${overlayScale})`}
       onBlur={() => onActiveChange(null)}
       onFocus={() => onActiveChange(vehicle.id)}
       onMouseEnter={() => onActiveChange(vehicle.id)}
@@ -88,7 +99,12 @@ export function MapAssetGlyph({
         y={-iconSize / 2}
       />
       {!vehicle.synthetic ? (
-        <text x="2.8" y="0.9" className="asset-label">
+        <text
+          className="asset-label"
+          textAnchor={labelOnLeft ? "end" : "start"}
+          x={labelX}
+          y={labelY}
+        >
           {vehicle.id}
         </text>
       ) : null}
@@ -110,14 +126,19 @@ function openMenuForAsset({
   onOpenMenu({ clientX: event.clientX, clientY: event.clientY, vehicle })
 }
 
-export function MapAssetInfoCard({ active, overlayScale, vehicle }: MapAssetInfoCardProps) {
+export function MapAssetInfoCard({
+  active,
+  displayPosition,
+  overlayScale,
+  vehicle,
+}: MapAssetInfoCardProps) {
   const availability = assetAvailability(vehicle)
-  const offset = infoOffsetFor(vehicle)
+  const offset = infoOffsetFor(displayPosition)
   return (
     <g
       className={`asset-info ${active ? "visible" : ""}`}
       data-asset-info-id={vehicle.id}
-      transform={`translate(${vehicle.position.x} ${vehicle.position.y}) scale(${overlayScale}) translate(${offset.x} ${offset.y})`}
+      transform={`translate(${displayPosition.x} ${displayPosition.y}) scale(${overlayScale}) translate(${offset.x} ${offset.y})`}
     >
       <rect className="asset-info-bg" x="0" y="0" width="38" height="22" rx="1.5" />
       <text className="asset-info-title" x="2.2" y="4.8">
@@ -152,8 +173,21 @@ function assetDescription(vehicle: Vehicle, availability: number): string {
   )}, 가용 ${formatPercent(availability)}`
 }
 
-function infoOffsetFor(vehicle: Vehicle): InfoOffset {
-  const x = vehicle.position.x > 62 ? -40 : 4
-  const y = vehicle.position.y > 56 ? -24 : 4
+function labelStaggerFor(vehicleId: string): number {
+  const suffix = Number(vehicleId.match(/[0-9]+$/)?.[0] ?? "0")
+  const offsets: Record<number, number> = {
+    1: -5.2,
+    2: -1.6,
+    3: 1.8,
+    4: 4.8,
+    5: 0.6,
+    6: 3.0,
+  }
+  return offsets[suffix] ?? 0
+}
+
+function infoOffsetFor(position: Point): InfoOffset {
+  const x = position.x > 62 ? -40 : 4
+  const y = position.y > 56 ? -24 : 4
   return { x, y }
 }

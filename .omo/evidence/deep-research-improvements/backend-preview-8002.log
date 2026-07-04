@@ -1,0 +1,15 @@
+INFO:     Started server process [30396]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8002 (Press CTRL+C to quit)
+INFO:     127.0.0.1:60350 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60274 - "WebSocket /ws/state" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:53728 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64177 - "GET /replay HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50847 - "GET /vehicle/types HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56399 - "WebSocket /ws/state" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:52137 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53069 - "GET /replay HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65381 - "GET /vehicle/types HTTP/1.1" 200 OK

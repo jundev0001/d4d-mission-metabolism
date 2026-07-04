@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { displayPositionsForVehicles } from "../mapAssetDisplay"
 import { minimumCoverageForArea } from "../mapCoverage"
 import {
   assetMenuStateFromClientPoint,
@@ -64,6 +65,7 @@ export function MapView() {
   const realAssets = dashboard.vehicles.filter((vehicle) => !vehicle.synthetic).length
   const syntheticAssets = dashboard.vehicles.length - realAssets
   const overlayScale = overlayScaleForViewBox(viewBox)
+  const assetDisplayPositions = displayPositionsForVehicles(dashboard.vehicles)
 
   const openAssetMenu = (request: AssetMenuRequest) => {
     setActiveAssetId(request.vehicle.id)
@@ -168,6 +170,7 @@ export function MapView() {
           {dashboard.vehicles.map((vehicle) => (
             <MapAssetGlyph
               active={activeAssetId === vehicle.id}
+              displayPosition={assetDisplayPositions.get(vehicle.id) ?? vehicle.position}
               key={vehicle.id}
               overlayScale={overlayScale}
               vehicle={vehicle}
@@ -179,6 +182,7 @@ export function MapView() {
             {dashboard.vehicles.map((vehicle) => (
               <MapAssetInfoCard
                 active={activeAssetId === vehicle.id}
+                displayPosition={assetDisplayPositions.get(vehicle.id) ?? vehicle.position}
                 key={`info-${vehicle.id}`}
                 overlayScale={overlayScale}
                 vehicle={vehicle}

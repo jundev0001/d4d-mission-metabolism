@@ -286,8 +286,7 @@ def _best_standby_reserve(context: _ResponseContext) -> Vehicle | None:
     candidates = [
         vehicle
         for vehicle in context.stressed.vehicles
-        if vehicle.status == VehicleStatus.STANDBY
-        and vehicle.id != context.event.target
+        if vehicle.status == VehicleStatus.STANDBY and vehicle.id != context.event.target
     ]
     if len(candidates) == 0:
         return None
@@ -348,10 +347,9 @@ def _action_for_assignment(
             "handoff contact to the asset best suited for overwatch",
         )
 
-    priority_delta = (
-        context.stressed.mission.area_priorities.get(desired.area, 0.0)
-        - context.stressed.mission.area_priorities.get(current.area, 0.0)
-    )
+    priority_delta = context.stressed.mission.area_priorities.get(
+        desired.area, 0.0
+    ) - context.stressed.mission.area_priorities.get(current.area, 0.0)
     rationale = (
         "pull asset from lower-priority tasking into higher-priority response"
         if priority_delta >= HIGH_PRIORITY_DELTA

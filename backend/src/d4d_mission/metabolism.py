@@ -83,6 +83,10 @@ def _attrition_risk(snapshot: DashboardState) -> float:
     return clamp01(sum(risks) / len(risks))
 
 
+def relay_redundancy(snapshot: DashboardState) -> float:
+    return _relay_redundancy(snapshot)
+
+
 def _relay_redundancy(snapshot: DashboardState) -> float:
     area_statuses = _relay_area_statuses(snapshot)
     if len(area_statuses) == 0:

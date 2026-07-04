@@ -6,6 +6,15 @@ import {
 
 export const DEFAULT_CUSTOM_SCENARIO: CustomScenarioDocument = CustomScenarioDocumentSchema.parse({
   version: 1,
+  intent: {
+    constraints: {
+      return_battery_threshold: 0.2,
+      min_relay_redundancy: 1,
+      human_approval_for_replan: true,
+      target_mcc: 0.8,
+    },
+    autonomy_level: 0.62,
+  },
   map: {
     name: "Custom ISR map",
     areas: [

@@ -115,6 +115,9 @@ class MissionRuntime:
                     "mission": mission,
                     "vehicles": staged_vehicles,
                     "assignments": (),
+                    "baseline_mission": mission,
+                    "baseline_vehicles": staged_vehicles,
+                    "baseline_assignments": (),
                     "recommendations": (),
                     "events": (),
                     "scenario_time": 0,
@@ -151,11 +154,16 @@ class MissionRuntime:
             assignments=plan.assignments,
             mission=self._snapshot.mission,
         )
-        self._snapshot = refresh_snapshot(
-            snapshot=self._snapshot.model_copy(
-                update={"vehicles": vehicles, "assignments": plan.assignments},
-            ),
-        )
+        updates: dict[str, object] = {"vehicles": vehicles, "assignments": plan.assignments}
+        if len(self._snapshot.events) == 0:
+            updates.update(
+                {
+                    "baseline_mission": self._snapshot.mission,
+                    "baseline_vehicles": vehicles,
+                    "baseline_assignments": plan.assignments,
+                },
+            )
+        self._snapshot = refresh_snapshot(snapshot=self._snapshot.model_copy(update=updates))
         self._blackbox.record_model(
             scenario_time=self._snapshot.scenario_time,
             kind="decision",

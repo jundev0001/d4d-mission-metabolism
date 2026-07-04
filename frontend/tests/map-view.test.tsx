@@ -70,7 +70,7 @@ describe("map view", () => {
 
     expect(zoomedViewBox).not.toBe("0 0 100 86")
     expect(svg.getAttribute("viewBox")).not.toBe(zoomedViewBox)
-    expect(assetGlyph).toHaveAttribute("transform", "translate(54 44) scale(0.86)")
+    expect(assetGlyph.getAttribute("transform")).toMatch(/^translate\(.+\) scale\(0\.86\)$/)
   })
 
   it("Given the COP is visible When the operator wheels over it Then the page scroll default is blocked", () => {

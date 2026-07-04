@@ -1,0 +1,22 @@
+
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+[36mvite v8.1.3 [32mbuilding client environment for production...[36m[39m
+[2Ktransforming...✓ 1916 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.60 kB │ gzip:   0.36 kB
+dist/assets/micro_scout_uav-IBugpeRG.png        17.13 kB
+dist/assets/fixedwing_survey_uav-C72s2qAa.png   17.78 kB
+dist/assets/gps_denied_uav-CAjCOhxI.png         18.49 kB
+dist/assets/overwatch_uav-Bs2DOaNH.png          19.69 kB
+dist/assets/quad_recon_uav-BlHoct3k.png         20.86 kB
+dist/assets/relay_uav-CdKWztJ_.png              21.70 kB
+dist/assets/synthetic_wingman-DS4In5VS.png      25.85 kB
+dist/assets/scout_rover-DRiUF9Wu.png            31.44 kB
+dist/assets/sensor_rover-D3OaQdyg.png           33.45 kB
+dist/assets/index-Bkj7zVA4.css                  28.21 kB │ gzip:   5.78 kB
+dist/assets/index-BqxoRw17.js                  360.79 kB │ gzip: 108.94 kB
+
+[32m✓ built in 451ms[39m

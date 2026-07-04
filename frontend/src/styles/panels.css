@@ -231,3 +231,7 @@
   align-items: center;
   margin-top: var(--space-3);
 }
+
+.ccr-band span:last-child {
+  white-space: nowrap;
+}

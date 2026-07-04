@@ -111,9 +111,7 @@ def test_allocation_uses_near_healthy_asset_before_far_low_battery_asset() -> No
         },
     )
     vehicles = tuple(
-        _patch_vehicle_for_battery_test(vehicle)
-        if vehicle.id in {"UxV-01", "UxV-02"}
-        else vehicle
+        _patch_vehicle_for_battery_test(vehicle) if vehicle.id in {"UxV-01", "UxV-02"} else vehicle
         for vehicle in snapshot.vehicles
     )
 

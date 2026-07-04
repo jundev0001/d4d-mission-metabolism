@@ -1,5 +1,4 @@
-import { CheckCircle2, Download, Play, Route, Upload } from "lucide-react"
-import { type ChangeEvent, useRef, useState } from "react"
+import { type ChangeEvent, useState } from "react"
 import {
   type CustomMapArea,
   type CustomPoint,
@@ -27,6 +26,8 @@ import {
   withScenarioNodePosition,
 } from "../customScenarioMutations"
 import { useMissionStore } from "../store"
+import { MissionIntentControls } from "./MissionIntentControls"
+import { ScenarioBuilderCommandBar } from "./ScenarioBuilderCommandBar"
 import { ScenarioMapEditor, ScenarioNodeEditor } from "./ScenarioBuilderEditors"
 import { ScenarioFlowCanvas } from "./ScenarioFlowCanvas"
 import { ScenarioGraphEditor } from "./ScenarioGraphEditor"
@@ -44,7 +45,6 @@ export function ScenarioBuilderPanel() {
   const [importError, setImportError] = useState<string | null>(null)
   const [flowNotice, setFlowNotice] = useState<string | null>(null)
   const [connectFromNodeId, setConnectFromNodeId] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const selectedNode =
     scenario.scenario.nodes.find((node) => node.id === selectedNodeId) ??
     scenario.scenario.nodes.at(0)
@@ -167,52 +167,16 @@ export function ScenarioBuilderPanel() {
         <span>Custom scenario builder</span>
         <span className="caption">No-code JSON</span>
       </div>
-      <div className="builder-command-row">
-        <button className="button" type="button" onClick={handleExport}>
-          <Download size={15} />
-          Export
-        </button>
-        <button className="button" type="button" onClick={() => fileInputRef.current?.click()}>
-          <Upload size={15} />
-          Import
-        </button>
-        <button
-          className="button"
-          type="button"
-          disabled={isRunningDemo}
-          onClick={() => void configureCustomMission()}
-        >
-          <CheckCircle2 size={15} />
-          Apply mission
-        </button>
-        <button
-          className="button"
-          type="button"
-          disabled={isRunningDemo}
-          onClick={() => void allocateMission()}
-        >
-          <Route size={15} />
-          Allocate
-        </button>
-        <button
-          className="button primary"
-          type="button"
-          disabled={isRunningDemo}
-          onClick={() => void runCustomScenario()}
-        >
-          <Play size={15} />
-          Run flow
-        </button>
-        <input
-          ref={fileInputRef}
-          className="sr-only"
-          type="file"
-          accept="application/json,.json"
-          onChange={(event) => void handleImport(event)}
-        />
-      </div>
+      <ScenarioBuilderCommandBar
+        disabled={isRunningDemo}
+        onAllocate={allocateMission}
+        onApplyMission={configureCustomMission}
+        onExport={handleExport}
+        onImport={handleImport}
+        onRunFlow={runCustomScenario}
+      />
       {importError || flowNotice ? (
-        <div className="builder-message-row">
+        <div className="builder-message-row" role="alert">
           {importError ? <p className="builder-error">Import failed: {importError}</p> : null}
           {flowNotice ? <p className="builder-error">{flowNotice}</p> : null}
         </div>
@@ -236,6 +200,10 @@ export function ScenarioBuilderPanel() {
           />
         </label>
       </div>
+      <MissionIntentControls
+        intent={scenario.intent}
+        onChange={(intent) => updateScenario({ ...scenario, intent })}
+      />
 
       <ScenarioFlowCanvas
         connectFromNodeId={connectFromNodeId}

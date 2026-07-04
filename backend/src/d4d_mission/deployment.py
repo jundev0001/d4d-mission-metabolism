@@ -38,6 +38,9 @@ def apply_fleet_deployment(
         update={
             "vehicles": vehicles,
             "assignments": (),
+            "baseline_mission": snapshot.mission,
+            "baseline_vehicles": vehicles,
+            "baseline_assignments": (),
             "recommendations": (),
             "events": (),
             "scenario_time": 0,

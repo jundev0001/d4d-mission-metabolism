@@ -18,6 +18,7 @@ describe("custom scenario document", () => {
     const serialized = serializeCustomScenario(DEFAULT_CUSTOM_SCENARIO)
     const imported = parseCustomScenarioText(serialized)
 
+    expect(imported.intent.constraints.target_mcc).toBe(0.8)
     expect(orderedCustomEvents(imported)).toEqual([
       { event_type: "comm_jam", target: "B", severity: 0.82 },
       { event_type: "battery_drop", target: "UxV-02", severity: 0.9 },
@@ -25,6 +26,23 @@ describe("custom scenario document", () => {
       { event_type: "gps_drop", target: "UxV-05", severity: 0.7 },
       { event_type: "no_go", target: "B", severity: 0.68 },
     ])
+  })
+
+  it("Given an older scenario JSON When imported Then mission intent defaults are added", () => {
+    const legacy = JSON.parse(serializeCustomScenario(DEFAULT_CUSTOM_SCENARIO))
+    delete legacy.intent
+
+    const imported = parseCustomScenarioText(JSON.stringify(legacy))
+
+    expect(imported.intent).toEqual({
+      constraints: {
+        return_battery_threshold: 0.2,
+        min_relay_redundancy: 1,
+        human_approval_for_replan: true,
+        target_mcc: 0.8,
+      },
+      autonomy_level: 0.62,
+    })
   })
 
   it("Given a branched scenario When deriving batches Then sibling events run in the same stage", () => {

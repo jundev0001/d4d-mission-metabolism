@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { EventTypes, type MissionType, MissionTypes } from "./types"
+import { EventTypes, type MissionConstraints, type MissionType, MissionTypes } from "./types"
 
 const VIEWBOX_HEIGHT = 86
 export const MAX_SCENARIO_AREAS = 12
@@ -18,6 +18,33 @@ const CapabilityDemandSchema = z.object({
   gps_denied_nav: z.number().min(0),
   reserve: z.number().min(0),
 })
+
+const MissionIntentSchema = z
+  .object({
+    constraints: z
+      .object({
+        return_battery_threshold: Percent.default(0.2),
+        min_relay_redundancy: z.number().int().min(0).default(1),
+        human_approval_for_replan: z.boolean().default(true),
+        target_mcc: Percent.default(0.8),
+      })
+      .default({
+        return_battery_threshold: 0.2,
+        min_relay_redundancy: 1,
+        human_approval_for_replan: true,
+        target_mcc: 0.8,
+      }),
+    autonomy_level: Percent.default(0.62),
+  })
+  .default({
+    constraints: {
+      return_battery_threshold: 0.2,
+      min_relay_redundancy: 1,
+      human_approval_for_replan: true,
+      target_mcc: 0.8,
+    },
+    autonomy_level: 0.62,
+  })
 
 export const CustomMapAreaSchema = z.object({
   id: z
@@ -53,6 +80,7 @@ const CustomScenarioEdgeSchema = z.object({
 
 export const CustomScenarioDocumentSchema = z.object({
   version: z.literal(1),
+  intent: MissionIntentSchema,
   map: z.object({
     name: z.string().min(1).max(48),
     areas: z.array(CustomMapAreaSchema).min(1).max(MAX_SCENARIO_AREAS),
@@ -67,6 +95,10 @@ export const CustomScenarioDocumentSchema = z.object({
 
 export type CustomPoint = z.infer<typeof PointSchema>
 export type CustomCapabilityDemand = z.infer<typeof CapabilityDemandSchema>
+export type CustomMissionIntent = {
+  readonly constraints: MissionConstraints
+  readonly autonomy_level: number
+}
 export type CustomMapArea = z.infer<typeof CustomMapAreaSchema>
 export type CustomScenarioDocument = z.infer<typeof CustomScenarioDocumentSchema>
 export type CustomScenarioNode = CustomScenarioDocument["scenario"]["nodes"][number]

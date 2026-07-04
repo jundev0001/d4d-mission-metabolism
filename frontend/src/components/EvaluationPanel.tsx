@@ -9,8 +9,11 @@ export function EvaluationPanel() {
   }
 
   const assisted = dashboard.metrics.operator_actions
-  const baseline = dashboard.baseline_operator_actions
-  const collapseReduction = Math.max(0, 0.64 - dashboard.metrics.collapse_probability)
+  const baseline = dashboard.baseline_metrics
+  const collapseReduction = Math.max(
+    0,
+    baseline.collapse_probability - dashboard.metrics.collapse_probability,
+  )
 
   return (
     <section className="panel evaluation-panel" data-testid="evaluation-panel">
@@ -27,15 +30,19 @@ export function EvaluationPanel() {
           </tr>
         </thead>
         <tbody>
-          <ComparisonMetric label="운용자 조작" baseline={`${baseline}`} assisted={`${assisted}`} />
+          <ComparisonMetric
+            label="운용자 조작"
+            baseline={`${baseline.operator_actions}`}
+            assisted={`${assisted}`}
+          />
           <ComparisonMetric
             label="재계획 시간"
-            baseline="46s"
+            baseline={`${baseline.replan_time_seconds.toFixed(0)}s`}
             assisted={`${dashboard.metrics.replan_time_seconds.toFixed(0)}s`}
           />
           <ComparisonMetric
             label="붕괴 위험"
-            baseline="64%"
+            baseline={formatPercent(baseline.collapse_probability)}
             assisted={formatPercent(dashboard.metrics.collapse_probability)}
           />
           <ComparisonMetric
@@ -46,9 +53,12 @@ export function EvaluationPanel() {
         </tbody>
       </table>
       <div className="ccr-band">
-        <span>CCR 내부</span>
-        <strong>{dashboard.metrics.ccr_internal.toFixed(1)}x</strong>
-        <span>사람 승인당 시스템 마이크로 액션</span>
+        <span>CCR</span>
+        <strong>
+          {dashboard.metrics.ccr_external.toFixed(1)}x / {dashboard.metrics.ccr_internal.toFixed(1)}
+          x
+        </strong>
+        <span>외부 / 내부 CCR</span>
       </div>
     </section>
   )

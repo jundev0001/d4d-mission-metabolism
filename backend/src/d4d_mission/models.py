@@ -257,6 +257,7 @@ class DashboardState(StrictModel):
     vehicles: tuple[Vehicle, ...]
     assignments: tuple[Assignment, ...]
     metrics: MetricSnapshot
+    baseline_metrics: MetricSnapshot
     capability_report: CapabilityReport
     recommendations: tuple[RecommendationCard, ...]
     events: tuple[EventRecord, ...]
@@ -266,3 +267,6 @@ class DashboardState(StrictModel):
     system_micro_actions: int
     human_intents: int
     recovery_actions: int
+    baseline_mission: Mission | None = Field(default=None, exclude=True)
+    baseline_vehicles: tuple[Vehicle, ...] = Field(default=(), exclude=True)
+    baseline_assignments: tuple[Assignment, ...] = Field(default=(), exclude=True)

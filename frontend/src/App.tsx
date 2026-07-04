@@ -25,13 +25,15 @@ const WORKSPACE_TABS: readonly {
 
 export function App() {
   const hydrate = useMissionStore((state) => state.hydrate)
+  const connectLive = useMissionStore((state) => state.connectLive)
   const isLoading = useMissionStore((state) => state.isLoading)
   const error = useMissionStore((state) => state.lastError)
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("mission")
 
   useEffect(() => {
     void hydrate()
-  }, [hydrate])
+    return connectLive()
+  }, [connectLive, hydrate])
 
   if (isLoading) {
     return (

@@ -5,6 +5,7 @@ import {
   DashboardStateSchema,
   type DecisionPayload,
   type EventPayload,
+  type MissionConstraints,
   type MissionType,
   type Point,
   type ReplayResponse,
@@ -31,6 +32,8 @@ const client = ky.create({
 export type MissionConfigurePayload = {
   readonly objective: string
   readonly mission_type: MissionType
+  readonly constraints: MissionConstraints
+  readonly autonomy_level: number
   readonly areas: readonly {
     readonly id: string
     readonly label: string

@@ -90,6 +90,18 @@ export function makeDashboardState(): DashboardState {
       ccr_external: 7,
       ccr_internal: 3,
     },
+    baseline_metrics: {
+      mcc: 0.88,
+      strain: 0.31,
+      collapse_probability: 0.5,
+      autonomy_debt: 0,
+      operator_actions: 28,
+      alert_backlog: 0,
+      approval_count: 0,
+      replan_time_seconds: 112,
+      ccr_external: 1,
+      ccr_internal: 1,
+    },
     capability_report: {
       effective_capabilities: { "UxV-04": vector(0.8) },
       area_reports: {

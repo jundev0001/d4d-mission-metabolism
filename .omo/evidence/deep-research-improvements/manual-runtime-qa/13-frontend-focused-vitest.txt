@@ -1,0 +1,13 @@
+
+> frontend@0.0.0 test
+> vitest run store.test.ts custom-scenario.test.ts
+
+
+ RUN  v4.1.9 C:/Users/Jun/Documents/D4D/frontend
+
+
+ Test Files  2 passed (2)
+      Tests  13 passed (13)
+   Start at  01:30:01
+   Duration  2.92s (transform 129ms, setup 775ms, import 361ms, tests 28ms, environment 4.00s)
+

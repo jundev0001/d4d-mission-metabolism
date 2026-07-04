@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 import { App } from "../src/App"
 
 const storeMock = vi.hoisted(() => ({
+  connectLive: vi.fn(() => vi.fn()),
   hydrate: vi.fn(),
 }))
 
@@ -10,10 +11,17 @@ vi.mock("../src/store", () => ({
   useMissionStore: (
     selector: (state: {
       readonly hydrate: typeof storeMock.hydrate
+      readonly connectLive: typeof storeMock.connectLive
       readonly isLoading: boolean
       readonly lastError: string | null
     }) => unknown,
-  ) => selector({ hydrate: storeMock.hydrate, isLoading: false, lastError: null }),
+  ) =>
+    selector({
+      connectLive: storeMock.connectLive,
+      hydrate: storeMock.hydrate,
+      isLoading: false,
+      lastError: null,
+    }),
 }))
 
 vi.mock("../src/components/Header", () => ({

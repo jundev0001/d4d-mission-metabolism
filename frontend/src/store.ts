@@ -3,7 +3,6 @@ import {
   fetchDashboardState,
   fetchReplay,
   fetchVehicleTypes,
-  type MissionConfigurePayload,
   allocateMission as postAllocation,
   injectEvent as postEvent,
   deployFleet as postFleetDeployment,
@@ -12,16 +11,12 @@ import {
   sendDecision,
   websocketUrl,
 } from "./api"
-import { areaCentroid, type CustomScenarioDocument } from "./customScenario"
+import { missionPayloadFromCustomScenario } from "./customMissionPayload"
+import type { CustomScenarioDocument } from "./customScenario"
 import { customScenarioEventBatches } from "./customScenarioGraph"
 import { DEFAULT_CUSTOM_SCENARIO } from "./defaultCustomScenario"
-import type { BlackBoxEntry } from "./types"
-import {
-  type DashboardState,
-  DashboardStateSchema,
-  type DecisionPayload,
-  type EventPayload,
-} from "./types"
+import { connectLiveDashboard } from "./liveDashboard"
+import type { BlackBoxEntry, DashboardState, DecisionPayload, EventPayload } from "./types"
 import type { FleetDeploymentPayload, VehicleTypeProfile } from "./vehicleDeployment"
 
 const SCRIPTED_EVENTS: readonly EventPayload[] = [
@@ -197,16 +192,12 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
   },
 
   connectLive: () => {
-    const socket = new WebSocket(websocketUrl())
-    socket.addEventListener("message", (event) => {
-      const parsed = DashboardStateSchema.safeParse(JSON.parse(event.data))
-      if (parsed.success) {
-        set({ dashboard: parsed.data })
-      }
+    return connectLiveDashboard({
+      fetchDashboardState,
+      websocketUrl: websocketUrl(),
+      onDashboard: (dashboard) => set({ dashboard, lastError: null }),
+      onError: (message) => set({ lastError: message === "" ? null : message }),
     })
-    return () => {
-      socket.close()
-    }
   },
 }))
 
@@ -229,24 +220,5 @@ async function injectDemoEventBatch(
   await delay(500)
   for (const event of events) {
     await getStore().injectEvent(event)
-  }
-}
-
-function missionPayloadFromCustomScenario(
-  customScenario: CustomScenarioDocument,
-): MissionConfigurePayload {
-  const firstArea = customScenario.map.areas.at(0)
-  return {
-    objective: customScenario.scenario.name,
-    mission_type: firstArea?.mission_type ?? "area_recon",
-    areas: customScenario.map.areas.map((area) => ({
-      id: area.id,
-      label: area.label,
-      mission_type: area.mission_type,
-      requirements: area.requirements,
-      priority: area.priority,
-      threat: area.threat,
-      center: areaCentroid(area),
-    })),
   }
 }

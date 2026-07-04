@@ -87,9 +87,9 @@ def plan_allocation(vehicles: tuple[Vehicle, ...], mission: Mission) -> Allocati
     priority areas by the next approved allocation.
     """
     placements = _plan(vehicles=vehicles, mission=mission)
-    reserve_count = sum(
-        1 for vehicle in vehicles if vehicle.status != VehicleStatus.LOST
-    ) - len(placements)
+    reserve_count = sum(1 for vehicle in vehicles if vehicle.status != VehicleStatus.LOST) - len(
+        placements
+    )
     return AllocationResponse(
         assignments=tuple(placement.assignment for placement in placements),
         explanations=_explanations(placements=placements, reserve_count=reserve_count),
@@ -210,8 +210,7 @@ def _best_candidate(
         candidate
         for vehicle in vehicles
         for candidate in (
-            _candidate_for_area(vehicle, area, mission, remaining)
-            for area in mission.areas
+            _candidate_for_area(vehicle, area, mission, remaining) for area in mission.areas
         )
         if candidate is not None
     ]
@@ -268,8 +267,7 @@ def _covered_in_area(
     area: str,
 ) -> float:
     return sum(
-        _coverage(effective, weight, remaining, area, capability)
-        for capability in CAPABILITY_NAMES
+        _coverage(effective, weight, remaining, area, capability) for capability in CAPABILITY_NAMES
     )
 
 
@@ -329,9 +327,7 @@ def _explanation_line(placement: _Placement) -> str:
 
 def _explanations(placements: tuple[_Placement, ...], reserve_count: int) -> tuple[str, ...]:
     filled = [
-        placement
-        for placement in placements
-        if not placement.synthetic and placement.covered > 0
+        placement for placement in placements if not placement.synthetic and placement.covered > 0
     ]
     ranked = sorted(
         filled,
@@ -356,19 +352,25 @@ def _area_urgency(mission: Mission, area: str) -> float:
 
 def _movement_cost(vehicle: Vehicle, area: str, mission: Mission) -> float:
     mobility = _vehicle_mobility(vehicle.type)
-    distance = _distance(
-        vehicle.position,
-        _staging_position(area=area, slot=0, mission=mission),
-    ) / 100
+    distance = (
+        _distance(
+            vehicle.position,
+            _staging_position(area=area, slot=0, mission=mission),
+        )
+        / 100
+    )
     return (distance / max(mobility.speed, 0.12)) * MOVEMENT_COST_WEIGHT
 
 
 def _battery_margin(vehicle: Vehicle, area: str, mission: Mission) -> float:
     mobility = _vehicle_mobility(vehicle.type)
-    distance = _distance(
-        vehicle.position,
-        _staging_position(area=area, slot=0, mission=mission),
-    ) / 100
+    distance = (
+        _distance(
+            vehicle.position,
+            _staging_position(area=area, slot=0, mission=mission),
+        )
+        / 100
+    )
     reserve_floor = mission.constraints.return_battery_threshold
     travel_budget = distance * (0.32 / max(mobility.endurance, 0.25))
     required = reserve_floor + travel_budget

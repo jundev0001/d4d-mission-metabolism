@@ -1,6 +1,49 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { DEFAULT_CUSTOM_SCENARIO } from "../src/defaultCustomScenario"
 import { useMissionStore } from "../src/store"
 import { makeDashboardState } from "./fixtures"
+
+type MessageHandler = (event: { readonly data: string }) => void
+type SocketEventType = "open" | "message" | "error" | "close"
+type SocketHandler = MessageHandler | (() => void)
+
+class FakeWebSocket {
+  static instances: FakeWebSocket[] = []
+
+  readonly url: string
+  closed = false
+  private readonly handlers: Record<SocketEventType, SocketHandler[]> = {
+    close: [],
+    error: [],
+    message: [],
+    open: [],
+  }
+
+  constructor(url: string) {
+    this.url = url
+    FakeWebSocket.instances.push(this)
+  }
+
+  addEventListener(type: SocketEventType, handler: SocketHandler): void {
+    this.handlers[type].push(handler)
+  }
+
+  close(): void {
+    this.closed = true
+  }
+
+  sendMessage(data: string): void {
+    for (const handler of this.handlers.message) {
+      ;(handler as MessageHandler)({ data })
+    }
+  }
+
+  emit(type: Exclude<SocketEventType, "message">): void {
+    for (const handler of this.handlers[type]) {
+      ;(handler as () => void)()
+    }
+  }
+}
 
 const apiMocks = vi.hoisted(() => ({
   allocateMission: vi.fn(),
@@ -31,6 +74,8 @@ vi.mock("../src/api", () => ({
 describe("mission store", () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    FakeWebSocket.instances = []
+    vi.stubGlobal("WebSocket", FakeWebSocket)
     apiMocks.fetchReplay.mockResolvedValue({ entries: [] })
     apiMocks.fetchVehicleTypes.mockResolvedValue({ profiles: [] })
     apiMocks.websocketUrl.mockReturnValue("ws://127.0.0.1:8000/ws/state")
@@ -42,6 +87,7 @@ describe("mission store", () => {
       isRunningDemo: false,
       selectedReplayIndex: 0,
       lastError: null,
+      customScenario: DEFAULT_CUSTOM_SCENARIO,
     })
   })
 
@@ -72,5 +118,59 @@ describe("mission store", () => {
     expect(apiMocks.deployFleet).toHaveBeenCalledWith(items)
     expect(useMissionStore.getState().dashboard?.vehicles[0]?.type).toBe("relay_uav")
     expect(useMissionStore.getState().lastError).toBeNull()
+  })
+
+  it("Given mission intent settings When configuring a custom mission Then governance fields are sent", async () => {
+    const dashboard = makeDashboardState()
+    apiMocks.configureMission.mockResolvedValue(dashboard)
+
+    await useMissionStore.getState().configureCustomMission()
+
+    expect(apiMocks.configureMission).toHaveBeenCalledWith(
+      expect.objectContaining({
+        objective: "Custom event flow",
+        mission_type: "area_recon",
+        constraints: {
+          return_battery_threshold: 0.2,
+          min_relay_redundancy: 1,
+          human_approval_for_replan: true,
+          target_mcc: 0.8,
+        },
+        autonomy_level: 0.62,
+      }),
+    )
+  })
+
+  it("Given live websocket state When a valid snapshot arrives Then the dashboard updates and closes cleanly", () => {
+    const dashboard = makeDashboardState()
+
+    const cleanup = useMissionStore.getState().connectLive()
+
+    const socket = FakeWebSocket.instances.at(0)
+    expect(socket?.url).toBe("ws://127.0.0.1:8000/ws/state")
+    socket?.sendMessage("{")
+    expect(useMissionStore.getState().dashboard).toBeNull()
+    socket?.sendMessage(JSON.stringify(dashboard))
+
+    expect(useMissionStore.getState().dashboard?.mission.id).toBe("mission-seoul-isr")
+    cleanup()
+    expect(socket?.closed).toBe(true)
+  })
+
+  it("Given live websocket failure When the stream errors Then REST polling keeps state fresh", async () => {
+    vi.useFakeTimers()
+    const dashboard = makeDashboardState()
+    apiMocks.fetchDashboardState.mockResolvedValue(dashboard)
+
+    const cleanup = useMissionStore.getState().connectLive()
+    const socket = FakeWebSocket.instances.at(0)
+    socket?.emit("error")
+    await vi.runOnlyPendingTimersAsync()
+
+    expect(apiMocks.fetchDashboardState).toHaveBeenCalled()
+    expect(useMissionStore.getState().dashboard?.mission.id).toBe("mission-seoul-isr")
+    expect(useMissionStore.getState().lastError).toBeNull()
+    cleanup()
+    vi.useRealTimers()
   })
 })

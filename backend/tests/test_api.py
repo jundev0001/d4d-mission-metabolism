@@ -1,13 +1,53 @@
-import json
+from collections.abc import Callable, Mapping
+from typing import cast
 
+import pytest
 from fastapi.testclient import TestClient
+from httpx import Response
+from pydantic import BaseModel
 
 from d4d_mission.main import create_app
+from d4d_mission.models import (
+    AllocationResponse,
+    CapabilityGapReport,
+    DashboardState,
+    MissionCatalogResponse,
+    RecommendationCard,
+    ReplayResponse,
+    VehicleTypeCatalogResponse,
+)
 from d4d_mission.types import DecisionAction, EventType
+
+type ResponseModel = BaseModel
+
+
+class ApiClient:
+    def __init__(self) -> None:
+        self._client: TestClient = TestClient(create_app())
+
+    def get(self, url: str, *, headers: Mapping[str, str] | None = None) -> Response:
+        get = cast("Callable[..., Response]", self._client.get)
+        return get(url, headers=headers)
+
+    def options(self, url: str, *, headers: Mapping[str, str] | None = None) -> Response:
+        options = cast("Callable[..., Response]", self._client.options)
+        return options(url, headers=headers)
+
+    def post(self, url: str, *, json: object | None = None) -> Response:
+        post = cast("Callable[..., Response]", self._client.post)
+        return post(url, json=json)
+
+
+def make_client() -> ApiClient:
+    return ApiClient()
+
+
+def response_model[T: ResponseModel](response: Response, model_type: type[T]) -> T:
+    return model_type.model_validate_json(response.text)
 
 
 def test_api_allows_vite_preview_origin_for_browser_qa() -> None:
-    client = TestClient(create_app())
+    client = make_client()
     origin = "http://127.0.0.1:4173"
 
     state_response = client.get("/", headers={"Origin": origin})
@@ -26,22 +66,23 @@ def test_api_allows_vite_preview_origin_for_browser_qa() -> None:
 
 
 def test_api_mission_event_decision_and_replay_flow() -> None:
-    client = TestClient(create_app())
+    client = make_client()
 
     mission_response = client.post("/mission", json={})
     assert mission_response.status_code == 200
-    assert mission_response.json()["mission"]["id"] == "mission-seoul-isr"
-    assert mission_response.json()["mission"]["mission_type"] == "area_recon"
-    assert mission_response.json()["assignments"] == []
-    assert {vehicle["area"] for vehicle in mission_response.json()["vehicles"]} == {"GCS"}
+    mission_payload = response_model(mission_response, DashboardState)
+    assert mission_payload.mission.id == "mission-seoul-isr"
+    assert mission_payload.mission.mission_type == "area_recon"
+    assert mission_payload.assignments == ()
+    assert {vehicle.area for vehicle in mission_payload.vehicles} == {"GCS"}
 
     mission_types_response = client.get("/mission/types")
     assert mission_types_response.status_code == 200
-    assert len(mission_types_response.json()["templates"]) == 7
+    assert len(response_model(mission_types_response, MissionCatalogResponse).templates) == 7
 
     vehicle_types_response = client.get("/vehicle/types")
     assert vehicle_types_response.status_code == 200
-    assert len(vehicle_types_response.json()["profiles"]) == 8
+    assert len(response_model(vehicle_types_response, VehicleTypeCatalogResponse).profiles) == 8
 
     deploy_response = client.post(
         "/fleet/deploy",
@@ -53,52 +94,52 @@ def test_api_mission_event_decision_and_replay_flow() -> None:
         },
     )
     assert deploy_response.status_code == 200
-    deployed_payload = deploy_response.json()
-    assert [vehicle["type"] for vehicle in deployed_payload["vehicles"]] == [
+    deployed_payload = response_model(deploy_response, DashboardState)
+    assert [vehicle.type for vehicle in deployed_payload.vehicles] == [
         "relay_uav",
         "relay_uav",
         "sensor_rover",
         "sensor_rover",
         "sensor_rover",
     ]
-    assert deployed_payload["assignments"] == []
-    assert {vehicle["area"] for vehicle in deployed_payload["vehicles"]} == {"GCS"}
+    assert deployed_payload.assignments == ()
+    assert {vehicle.area for vehicle in deployed_payload.vehicles} == {"GCS"}
 
     allocation_response = client.post("/allocate")
     assert allocation_response.status_code == 200
-    assert len(allocation_response.json()["assignments"]) > 0
+    assert len(response_model(allocation_response, AllocationResponse).assignments) > 0
 
     event_response = client.post(
         "/event/inject",
         json={"event_type": EventType.COMM_JAM, "target": "B", "severity": 0.8},
     )
     assert event_response.status_code == 200
-    event_payload = event_response.json()
-    card_id = event_payload["recommendations"][0]["id"]
-    assert event_payload["metrics"]["collapse_probability"] > 0.3
+    event_payload = response_model(event_response, DashboardState)
+    card_id = event_payload.recommendations[0].id
+    assert event_payload.metrics.collapse_probability > 0.3
 
     decision_response = client.post(
         "/decision",
         json={"recommendation_id": card_id, "action": DecisionAction.APPROVE},
     )
     assert decision_response.status_code == 200
-    assert decision_response.json()["recommendations"][0]["status"] == "approved"
+    assert response_model(decision_response, DashboardState).recommendations[0].status == "approved"
 
     replay_response = client.get("/replay")
     assert replay_response.status_code == 200
-    replay_entries = replay_response.json()["entries"]
+    replay_entries = response_model(replay_response, ReplayResponse).entries
     assert len(replay_entries) >= 4
     resolved_cards = [
-        json.loads(entry["payload_json"])
+        RecommendationCard.model_validate_json(entry.payload_json)
         for entry in replay_entries
-        if entry["kind"] == "recommendation" and entry["summary"].startswith("approved ")
+        if entry.kind == "recommendation" and entry.summary.startswith("approved ")
     ]
-    assert resolved_cards[0]["id"] == card_id
-    assert resolved_cards[0]["status"] == "approved"
+    assert resolved_cards[0].id == card_id
+    assert resolved_cards[0].status == "approved"
 
 
 def test_api_capability_gaps_rank_after_vehicle_loss() -> None:
-    client = TestClient(create_app())
+    client = make_client()
 
     allocation = client.post("/allocate")
     assert allocation.status_code == 200
@@ -106,7 +147,8 @@ def test_api_capability_gaps_rank_after_vehicle_loss() -> None:
     healthy = client.post("/capability/gaps")
     assert healthy.status_code == 200
     assert not any(
-        gap["area"] == "B" and gap["capability"] == "relay" for gap in healthy.json()["gaps"]
+        gap.area == "B" and gap.capability == "relay"
+        for gap in response_model(healthy, CapabilityGapReport).gaps
     )
 
     loss = client.post(
@@ -115,14 +157,15 @@ def test_api_capability_gaps_rank_after_vehicle_loss() -> None:
     )
     assert loss.status_code == 200
 
-    gaps = client.post("/capability/gaps").json()["gaps"]
-    relay_b = [gap for gap in gaps if gap["area"] == "B" and gap["capability"] == "relay"]
+    gaps_response = client.post("/capability/gaps")
+    gaps = response_model(gaps_response, CapabilityGapReport).gaps
+    relay_b = [gap for gap in gaps if gap.area == "B" and gap.capability == "relay"]
     assert len(relay_b) == 1
-    assert relay_b[0]["deficit_ratio"] > 0
+    assert relay_b[0].deficit_ratio > 0
 
 
 def test_api_rejects_invalid_event_type_and_unknown_vehicle() -> None:
-    client = TestClient(create_app())
+    client = make_client()
 
     invalid_type = client.post(
         "/event/inject",
@@ -138,50 +181,55 @@ def test_api_rejects_invalid_event_type_and_unknown_vehicle() -> None:
 
 
 def test_api_accepts_new_tactical_immune_event_targets() -> None:
-    client = TestClient(create_app())
+    client = make_client()
 
     area_event = client.post(
         "/event/inject",
         json={"event_type": EventType.DATA_STALE, "target": "A", "severity": 0.65},
     )
     assert area_event.status_code == 200
-    assert area_event.json()["recommendations"][0]["actions"][0]["action"] == "mark_area_stale"
+    area_payload = response_model(area_event, DashboardState)
+    assert area_payload.recommendations[0].actions[0].action == "mark_area_stale"
 
     vehicle_event = client.post(
         "/event/inject",
         json={"event_type": EventType.MOBILITY_BLOCKED, "target": "UxV-05", "severity": 0.7},
     )
     assert vehicle_event.status_code == 200
-    assert vehicle_event.json()["recommendations"][0]["actions"][0]["action"] == "reroute"
+    vehicle_payload = response_model(vehicle_event, DashboardState)
+    assert vehicle_payload.recommendations[0].actions[0].action == "reroute"
 
 
 def test_api_allocate_applies_and_explains() -> None:
-    client = TestClient(create_app())
+    client = make_client()
 
     response = client.post("/allocate")
 
     assert response.status_code == 200
-    body = response.json()
-    assert len(body["assignments"]) > 0
-    assert len(body["explanations"]) > 0
-    state = client.get("/").json()
-    assigned_ids = {assignment["vehicle_id"] for assignment in body["assignments"]}
-    assert any(vehicle["area"] == "GCS" for vehicle in state["vehicles"])
-    assert all(
-        vehicle["area"] != "GCS"
-        for vehicle in state["vehicles"]
-        if vehicle["id"] in assigned_ids
-    )
+    body = response_model(response, AllocationResponse)
+    assert len(body.assignments) > 0
+    assert len(body.explanations) > 0
+    state = response_model(client.get("/"), DashboardState)
+    assigned_ids = {assignment.vehicle_id for assignment in body.assignments}
+    assert any(vehicle.area == "GCS" for vehicle in state.vehicles)
+    assert all(vehicle.area != "GCS" for vehicle in state.vehicles if vehicle.id in assigned_ids)
 
 
 def test_api_configures_custom_areas_before_allocation() -> None:
-    client = TestClient(create_app())
+    client = make_client()
 
     configured = client.post(
         "/mission/configure",
         json={
             "objective": "Custom drawn areas",
             "mission_type": "area_recon",
+            "constraints": {
+                "return_battery_threshold": 0.28,
+                "min_relay_redundancy": 2,
+                "human_approval_for_replan": False,
+                "target_mcc": 0.86,
+            },
+            "autonomy_level": 0.74,
             "areas": [
                 {
                     "id": "alpha",
@@ -218,23 +266,132 @@ def test_api_configures_custom_areas_before_allocation() -> None:
     )
 
     assert configured.status_code == 200
-    payload = configured.json()
-    assert payload["mission"]["areas"] == ["alpha", "bravo"]
-    assert payload["mission"]["area_centers"]["alpha"] == {"x": 18.0, "y": 24.0}
-    assert payload["mission"]["area_mission_types"]["bravo"] == "comm_relay"
-    assert payload["assignments"] == []
-    assert {vehicle["area"] for vehicle in payload["vehicles"]} == {"GCS"}
+    payload = response_model(configured, DashboardState)
+    assert payload.mission.areas == ("alpha", "bravo")
+    assert payload.mission.constraints.return_battery_threshold == 0.28
+    assert payload.mission.constraints.min_relay_redundancy == 2
+    assert payload.mission.constraints.human_approval_for_replan is False
+    assert payload.mission.constraints.target_mcc == 0.86
+    assert payload.mission.autonomy_level == 0.74
+    assert payload.mission.area_centers["alpha"].model_dump() == {"x": 18.0, "y": 24.0}
+    assert payload.mission.area_mission_types["bravo"] == "comm_relay"
+    assert payload.assignments == ()
+    assert {vehicle.area for vehicle in payload.vehicles} == {"GCS"}
 
     allocation = client.post("/allocate")
 
     assert allocation.status_code == 200
-    assigned_areas = {assignment["area"] for assignment in allocation.json()["assignments"]}
+    assigned_areas = {
+        assignment.area for assignment in response_model(allocation, AllocationResponse).assignments
+    }
     assert len(assigned_areas) > 0
     assert assigned_areas <= {"alpha", "bravo"}
 
 
+def test_api_event_injection_does_not_count_as_operator_action() -> None:
+    client = make_client()
+    initial_actions = response_model(client.get("/"), DashboardState).metrics.operator_actions
+
+    event_response = client.post(
+        "/event/inject",
+        json={"event_type": EventType.COMM_JAM, "target": "B", "severity": 0.8},
+    )
+
+    assert event_response.status_code == 200
+    event_payload = response_model(event_response, DashboardState)
+    card_id = event_payload.recommendations[0].id
+    assert event_payload.metrics.operator_actions == initial_actions
+
+    decision_response = client.post(
+        "/decision",
+        json={"recommendation_id": card_id, "action": DecisionAction.APPROVE},
+    )
+
+    assert decision_response.status_code == 200
+    assert (
+        response_model(decision_response, DashboardState).metrics.operator_actions
+        == initial_actions + 1
+    )
+
+
+def test_api_keeps_paired_baseline_after_assisted_decision() -> None:
+    client = make_client()
+
+    event_response = client.post(
+        "/event/inject",
+        json={"event_type": EventType.BATTERY_DROP, "target": "UxV-02", "severity": 0.9},
+    )
+    assert event_response.status_code == 200
+    event_payload = response_model(event_response, DashboardState)
+    card_id = event_payload.recommendations[0].id
+    event_baseline = event_payload.baseline_metrics
+
+    decision_response = client.post(
+        "/decision",
+        json={"recommendation_id": card_id, "action": DecisionAction.APPROVE},
+    )
+
+    assert decision_response.status_code == 200
+    decision_payload = response_model(decision_response, DashboardState)
+    assert decision_payload.baseline_metrics.mcc == event_baseline.mcc
+    assert (
+        decision_payload.baseline_metrics.operator_actions
+        > decision_payload.metrics.operator_actions
+    )
+    assert (
+        decision_payload.baseline_metrics.collapse_probability
+        >= decision_payload.metrics.collapse_probability
+    )
+
+
+def test_api_exposes_paired_baseline_metrics() -> None:
+    client = make_client()
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    payload = response_model(response, DashboardState)
+    assert payload.baseline_metrics.operator_actions == payload.baseline_operator_actions
+    assert payload.baseline_metrics.replan_time_seconds > 0
+    assert payload.baseline_metrics.collapse_probability >= 0
+
+
+def test_api_reads_cors_origins_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    origin = "https://demo.example.test"
+    monkeypatch.setenv("D4D_CORS_ORIGINS", f"{origin}, http://127.0.0.1:4173")
+    client = make_client()
+
+    response = client.options(
+        "/",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == origin
+
+
+def test_api_uses_default_cors_when_environment_is_blank(monkeypatch: pytest.MonkeyPatch) -> None:
+    origin = "http://127.0.0.1:4173"
+    monkeypatch.setenv("D4D_CORS_ORIGINS", "   ")
+    client = make_client()
+
+    response = client.options(
+        "/",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == origin
+
+
 def test_api_rejects_empty_deployment() -> None:
-    client = TestClient(create_app())
+    client = make_client()
 
     response = client.post(
         "/fleet/deploy",

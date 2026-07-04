@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import NoReturn
 
@@ -36,6 +37,13 @@ from d4d_mission.types import (
     VehicleType,
 )
 
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost:4173",
+    "http://localhost:5173",
+    "http://127.0.0.1:4173",
+    "http://127.0.0.1:5173",
+]
+
 
 class MissionCreateRequest(StrictModel):
     seed: int = 42
@@ -64,6 +72,8 @@ class MissionConfigureRequest(StrictModel):
     objective: str = Field(default="Custom COP mission", min_length=1, max_length=160)
     mission_type: MissionType = MissionType.AREA_RECON
     areas: tuple[MissionAreaConfigureRequest, ...] = Field(min_length=1, max_length=12)
+    constraints: MissionConstraints = Field(default_factory=MissionConstraints)
+    autonomy_level: float = Field(default=0.62, ge=0, le=1)
 
 
 def create_app() -> FastAPI:
@@ -71,12 +81,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="D4D Mission Metabolism API")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:4173",
-            "http://localhost:5173",
-            "http://127.0.0.1:4173",
-            "http://127.0.0.1:5173",
-        ],
+        allow_origins=_cors_origins(),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -195,12 +200,21 @@ def _mission_from_configure_request(payload: MissionConfigureRequest) -> Mission
         objective=payload.objective,
         areas=area_ids,
         requirements={area.id: area.requirements for area in payload.areas},
-        constraints=MissionConstraints(),
+        constraints=payload.constraints,
+        autonomy_level=payload.autonomy_level,
         area_threats={area.id: area.threat for area in payload.areas},
         area_priorities={area.id: area.priority for area in payload.areas},
         area_centers={area.id: area.center for area in payload.areas},
         area_mission_types={area.id: area.mission_type for area in payload.areas},
     )
+
+
+def _cors_origins() -> list[str]:
+    raw_origins = os.environ.get("D4D_CORS_ORIGINS")
+    if raw_origins is None:
+        return DEFAULT_CORS_ORIGINS
+    parsed_origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+    return parsed_origins if len(parsed_origins) > 0 else DEFAULT_CORS_ORIGINS
 
 
 app = create_app()

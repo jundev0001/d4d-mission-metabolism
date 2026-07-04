@@ -1,0 +1,18 @@
+05-metrics-before-event.txt {
+  operator_actions: 1,
+  assisted_operator_actions: undefined,
+  recommendations: undefined,
+  events: undefined
+}
+06-event-inject.txt {
+  operator_actions: 1,
+  assisted_operator_actions: 1,
+  recommendations: 1,
+  events: 1
+}
+07-metrics-after-event.txt {
+  operator_actions: 1,
+  assisted_operator_actions: undefined,
+  recommendations: undefined,
+  events: undefined
+}

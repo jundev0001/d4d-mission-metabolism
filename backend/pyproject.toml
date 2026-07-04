@@ -25,6 +25,7 @@ pythonVersion = "3.12"
 pythonPlatform = "All"
 include = ["src"]
 exclude = ["**/__pycache__", "**/.venv", "**/build", "**/dist"]
+executionEnvironments = [{ root = "src", extraPaths = ["src"] }]
 reportUnusedCallResult = "warning"
 reportUnnecessaryTypeIgnoreComment = "error"
 reportUnusedVariable = "error"
