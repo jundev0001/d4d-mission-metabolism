@@ -3,3 +3,4 @@ AM 4:48:11 [vite] (client) [console.error] Maximum update depth exceeded. This c
 AM 5:03:15 [vite] (client) [console.warn] Something has shimmed the React DevTools global hook (__REACT_DEVTOOLS_GLOBAL_HOOK__). Fast Refresh is not compatible with this shim and will be disabled.
 AM 5:23:56 [vite] (client) [console.warn] Something has shimmed the React DevTools global hook (__REACT_DEVTOOLS_GLOBAL_HOOK__). Fast Refresh is not compatible with this shim and will be disabled.
 AM 5:25:39 [vite] (client) [console.warn] Something has shimmed the React DevTools global hook (__REACT_DEVTOOLS_GLOBAL_HOOK__). Fast Refresh is not compatible with this shim and will be disabled.
+AM 6:27:17 [vite] (client) [console.warn] Something has shimmed the React DevTools global hook (__REACT_DEVTOOLS_GLOBAL_HOOK__). Fast Refresh is not compatible with this shim and will be disabled.

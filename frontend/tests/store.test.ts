@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { withScenarioName } from "../src/customScenarioMutations"
 import { DEFAULT_CUSTOM_SCENARIO } from "../src/defaultCustomScenario"
 import { useMissionStore } from "../src/store"
 import { makeDashboardState } from "./fixtures"
@@ -177,6 +178,37 @@ describe("mission store", () => {
     expect(apiMocks.allocateMission.mock.invocationCallOrder[0]).toBeLessThan(
       apiMocks.injectEvent.mock.invocationCallOrder[0] ?? 0,
     )
+    vi.useRealTimers()
+  })
+
+  it("Given a custom scenario run When scenario edits happen during reset Then the original scenario drives the run", async () => {
+    vi.useFakeTimers()
+    const originalScenario = withScenarioName(DEFAULT_CUSTOM_SCENARIO, "Original custom flow")
+    const lateEditScenario = withScenarioName(DEFAULT_CUSTOM_SCENARIO, "Late edit flow")
+    const resetDashboard = { ...makeDashboardState(), assignments: [] }
+    const configuredDashboard = makeDashboardState()
+    const allocatedDashboard = makeDashboardState()
+    apiMocks.resetMission.mockImplementation(() => {
+      useMissionStore.getState().setCustomScenario(lateEditScenario)
+      return Promise.resolve(resetDashboard)
+    })
+    apiMocks.configureMission.mockResolvedValue(configuredDashboard)
+    apiMocks.allocateMission.mockResolvedValue(allocatedDashboard)
+    apiMocks.injectEvent.mockResolvedValue(allocatedDashboard)
+    useMissionStore.setState({ customScenario: originalScenario })
+
+    const run = useMissionStore.getState().runCustomScenario()
+    await vi.advanceTimersByTimeAsync(2200)
+    await run
+
+    expect(apiMocks.configureMission).toHaveBeenCalledWith(
+      expect.objectContaining({ objective: "Original custom flow" }),
+    )
+    expect(apiMocks.injectEvent).toHaveBeenCalledWith({
+      event_type: "comm_jam",
+      target: "B",
+      severity: 0.82,
+    })
     vi.useRealTimers()
   })
 

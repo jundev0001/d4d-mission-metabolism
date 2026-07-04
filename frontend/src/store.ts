@@ -47,7 +47,7 @@ type MissionStore = {
   readonly reset: () => Promise<void>
   readonly deployFleet: (items: FleetDeploymentPayload) => Promise<void>
   readonly tuneVehicle: (payload: VehicleTunePayload) => Promise<void>
-  readonly configureCustomMission: () => Promise<void>
+  readonly configureCustomMission: (customScenario?: CustomScenarioDocument) => Promise<void>
   readonly allocateMission: () => Promise<void>
   readonly injectEvent: (event: EventPayload) => Promise<void>
   readonly decide: (decision: DecisionPayload) => Promise<void>
@@ -121,10 +121,10 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
     }
   },
 
-  configureCustomMission: async () => {
+  configureCustomMission: async (customScenario) => {
     try {
       const dashboard = await postMissionConfiguration(
-        missionPayloadFromCustomScenario(get().customScenario),
+        missionPayloadFromCustomScenario(customScenario ?? get().customScenario),
       )
       const replay = await fetchReplay()
       set({ dashboard, replay: replay.entries, selectedReplayIndex: 0, lastError: null })
@@ -190,12 +190,13 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
     if (get().isRunningDemo) {
       return
     }
+    const customScenario = get().customScenario
     set({ isRunningDemo: true, lastError: null })
     try {
       await get().reset()
-      await get().configureCustomMission()
+      await get().configureCustomMission(customScenario)
       await get().allocateMission()
-      await customScenarioEventBatches(get().customScenario).reduce(
+      await customScenarioEventBatches(customScenario).reduce(
         (sequence, events) => sequence.then(() => injectDemoEventBatch(events, get)),
         Promise.resolve(),
       )

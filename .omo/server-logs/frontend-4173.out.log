@@ -20,3 +20,19 @@ AM 4:57:17 [vite] (client) hmr update /src/App.css
 AM 5:05:18 [vite] (client) hmr update /src/components/ScenarioWorkspace.tsx
 AM 5:05:34 [vite] (client) hmr update /src/App.css
 AM 5:07:30 [vite] (client) hmr update /src/App.css
+AM 5:52:45 [vite] (client) hmr update /src/components/ScenarioAreaDrawControl.tsx
+AM 5:53:48 [vite] (client) hmr update /src/components/ScenarioMapEditor.tsx
+AM 5:54:01 [vite] (client) hmr update /src/App.css
+AM 5:54:08 [vite] (client) hmr update /src/App.css
+AM 5:54:13 [vite] (client) hmr update /src/components/ScenarioMapEditor.tsx
+AM 5:54:49 [vite] (client) hmr update /src/components/ScenarioAreaDrawControl.tsx
+AM 5:54:55 [vite] (client) hmr update /src/components/ScenarioMapEditor.tsx
+AM 5:55:28 [vite] (client) hmr update /src/components/ScenarioMapEditor.tsx
+AM 6:22:38 [vite] (client) hmr update /src/components/CapabilityPanel.tsx, /src/components/MetricStrip.tsx, /src/components/RecommendationPanel.tsx, /src/components/Header.tsx, /src/components/EvaluationPanel.tsx, /src/components/BlackBoxPanel.tsx, /src/components/EventControls.tsx, /src/components/FleetDeploymentPanel.tsx, /src/components/MapAreaSector.tsx, /src/components/MapAssetContextMenu.tsx, /src/components/MapAssetGlyph.tsx, /src/components/MapReadout.tsx, /src/components/MapPathOverlays.tsx and 6 more
+AM 6:22:38 [vite] (client) hmr update /src/components/CapabilityPanel.tsx, /src/components/BlackBoxPanel.tsx, /src/components/EventControls.tsx, /src/App.tsx, /src/components/MetricStrip.tsx, /src/components/ScenarioWorkspace.tsx, /src/components/RecommendationPanel.tsx, /src/components/Header.tsx, /src/components/MapView.tsx, /src/components/EvaluationPanel.tsx, /src/components/ScenarioBuilderPanel.tsx, /src/components/FleetDeploymentPanel.tsx, /src/components/MapAreaSector.tsx, /src/components/ScenarioBuilderStageViews.tsx and 7 more
+AM 6:22:38 [vite] (client) hmr update /src/components/EventControls.tsx
+AM 6:23:18 [vite] (client) hmr update /src/components/EventControls.tsx
+AM 6:23:18 [vite] (client) hmr update /src/components/CapabilityPanel.tsx, /src/components/BlackBoxPanel.tsx, /src/components/EventControls.tsx, /src/App.tsx, /src/components/MetricStrip.tsx, /src/components/ScenarioWorkspace.tsx, /src/components/RecommendationPanel.tsx, /src/components/Header.tsx, /src/components/MapView.tsx, /src/components/EvaluationPanel.tsx, /src/components/ScenarioBuilderPanel.tsx, /src/components/FleetDeploymentPanel.tsx, /src/components/MapAreaSector.tsx, /src/components/ScenarioBuilderStageViews.tsx and 7 more
+AM 6:23:18 [vite] (client) hmr update /src/components/CapabilityPanel.tsx, /src/components/MetricStrip.tsx, /src/components/RecommendationPanel.tsx, /src/components/Header.tsx, /src/components/EvaluationPanel.tsx, /src/components/BlackBoxPanel.tsx, /src/components/EventControls.tsx, /src/components/FleetDeploymentPanel.tsx, /src/components/MapAreaSector.tsx, /src/components/MapAssetContextMenu.tsx, /src/components/MapAssetGlyph.tsx, /src/components/MapReadout.tsx, /src/components/MapPathOverlays.tsx and 6 more
+AM 6:24:25 [vite] (client) hmr update /src/App.tsx, /src/components/CapabilityPanel.tsx, /src/components/MetricStrip.tsx, /src/components/ScenarioWorkspace.tsx, /src/components/RecommendationPanel.tsx, /src/components/Header.tsx, /src/components/MapView.tsx, /src/components/EvaluationPanel.tsx, /src/components/BlackBoxPanel.tsx, /src/components/EventControls.tsx, /src/components/ScenarioBuilderPanel.tsx, /src/components/FleetDeploymentPanel.tsx
+AM 6:29:14 [vite] (client) hmr update /src/App.tsx, /src/components/CapabilityPanel.tsx, /src/components/MetricStrip.tsx, /src/components/ScenarioWorkspace.tsx, /src/components/RecommendationPanel.tsx, /src/components/Header.tsx, /src/components/MapView.tsx, /src/components/EvaluationPanel.tsx, /src/components/BlackBoxPanel.tsx, /src/components/EventControls.tsx, /src/components/ScenarioBuilderPanel.tsx, /src/components/FleetDeploymentPanel.tsx
