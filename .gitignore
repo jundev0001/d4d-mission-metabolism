@@ -1,0 +1,13 @@
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/.react-doctor-report.json
+frontend/.qa/
+backend/data/*.jsonl
+backend/.venv/
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/.basedpyright/
+backend/src/**/*.pyc
+backend/src/**/__pycache__/
+backend/tests/**/__pycache__/
