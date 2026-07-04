@@ -5,7 +5,7 @@ import type { CustomPoint } from "../src/customScenario"
 import { DEFAULT_CUSTOM_SCENARIO } from "../src/defaultCustomScenario"
 
 describe("scenario map editor", () => {
-  it("Given the map editor When the operator drags a new area Then the rectangle is saved on release", () => {
+  it("Given the map editor When the operator drags a new area Then the rectangle remains editable until saved", () => {
     const onAddArea = vi.fn<(points: readonly CustomPoint[]) => void>()
     const selectedArea = DEFAULT_CUSTOM_SCENARIO.map.areas[0]
     render(
@@ -28,6 +28,10 @@ describe("scenario map editor", () => {
     fireEvent.pointerMove(canvas, { clientX: 260, clientY: 220, pointerId: 1 })
     fireEvent.pointerUp(canvas, { clientX: 260, clientY: 220, pointerId: 1 })
 
+    expect(onAddArea).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole("button", { name: "도형 저장" }))
+
     expect(onAddArea).toHaveBeenCalledWith([
       { x: 10, y: 12 },
       { x: 52, y: 12 },
@@ -36,7 +40,7 @@ describe("scenario map editor", () => {
     ])
   })
 
-  it("Given a selected area When the operator redraws it Then the replacement rectangle is saved on release", () => {
+  it("Given a selected area When the operator redraws it Then the replacement saves only after explicit commit", () => {
     const onChange = vi.fn()
     const selectedArea = DEFAULT_CUSTOM_SCENARIO.map.areas[0]
     render(
@@ -59,6 +63,10 @@ describe("scenario map editor", () => {
     fireEvent.pointerMove(canvas, { clientX: 300, clientY: 250, pointerId: 2 })
     fireEvent.pointerUp(canvas, { clientX: 300, clientY: 250, pointerId: 2 })
 
+    expect(onChange).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole("button", { name: "도형 저장" }))
+
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
         label_position: { x: 30, y: 29 },
@@ -72,5 +80,42 @@ describe("scenario map editor", () => {
         threat_position: { x: 36, y: 32 },
       }),
     )
+  })
+
+  it("Given a draft shape When the operator drags a corner handle Then the saved rectangle uses the edited bounds", () => {
+    const onAddArea = vi.fn<(points: readonly CustomPoint[]) => void>()
+    const selectedArea = DEFAULT_CUSTOM_SCENARIO.map.areas[0]
+    render(
+      <ScenarioMapEditor
+        areas={DEFAULT_CUSTOM_SCENARIO.map.areas}
+        selectedArea={selectedArea}
+        onAddArea={onAddArea}
+        onChange={vi.fn()}
+        onDeleteArea={vi.fn()}
+        onSelectArea={vi.fn()}
+      />,
+    )
+    const canvas = screen.getByRole("img", { name: "구역 폴리곤 편집기" })
+    vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ height: 430, width: 500, x: 0, y: 0 }),
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "새 구역 그리기" }))
+    fireEvent.pointerDown(canvas, { clientX: 50, clientY: 60, pointerId: 3 })
+    fireEvent.pointerMove(canvas, { clientX: 260, clientY: 220, pointerId: 3 })
+    fireEvent.pointerUp(canvas, { clientX: 260, clientY: 220, pointerId: 3 })
+
+    expect(screen.getByLabelText("구역 se 핸들")).toBeInTheDocument()
+    fireEvent.pointerDown(canvas, { clientX: 260, clientY: 220, pointerId: 4 })
+    fireEvent.pointerMove(canvas, { clientX: 320, clientY: 280, pointerId: 4 })
+    fireEvent.pointerUp(canvas, { clientX: 320, clientY: 280, pointerId: 4 })
+    fireEvent.click(screen.getByRole("button", { name: "도형 저장" }))
+
+    expect(onAddArea).toHaveBeenCalledWith([
+      { x: 10, y: 12 },
+      { x: 64, y: 12 },
+      { x: 64, y: 56 },
+      { x: 10, y: 56 },
+    ])
   })
 })

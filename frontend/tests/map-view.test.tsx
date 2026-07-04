@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { MapView } from "../src/components/MapView"
 import { DEFAULT_CUSTOM_SCENARIO } from "../src/defaultCustomScenario"
+import { mapAssetIconHref } from "../src/mapAssetIcons"
 import { useMissionStore } from "../src/store"
 import { makeDashboardState } from "./fixtures"
 import { makeMapDashboard, mapVehicleTypeProfiles } from "./map-fixtures"
@@ -99,12 +100,13 @@ describe("map view", () => {
     useMissionStore.setState({ dashboard: makeMapDashboard() })
     render(<MapView />)
 
-    expect(assetIconHref("UxV-01")).toContain("fixedwing_survey_uav")
-    expect(assetIconHref("UxV-02")).toContain("micro_scout_uav")
-    expect(assetIconHref("UxV-03")).toContain("overwatch_uav")
-    expect(assetIconHref("UxV-04")).toContain("relay_uav")
-    expect(assetIconHref("UxV-05")).toContain("sensor_rover")
-    expect(assetIconHref("UxV-06")).toContain("scout_rover")
+    expect(assetIconHref("UxV-01")).toBe(mapAssetIconHref("fixedwing_survey_uav"))
+    expect(assetIconHref("UxV-02")).toBe(mapAssetIconHref("micro_scout_uav"))
+    expect(assetIconHref("UxV-03")).toBe(mapAssetIconHref("overwatch_uav"))
+    expect(assetIconHref("UxV-04")).toBe(mapAssetIconHref("relay_uav"))
+    expect(assetIconHref("UxV-05")).toBe(mapAssetIconHref("sensor_rover"))
+    expect(assetIconHref("UxV-06")).toBe(mapAssetIconHref("scout_rover"))
+    expect(assetIconHref("UxV-01")).toMatch(/^data:image\/png;base64,/)
   })
 
   it("Given area missions and an approved recommendation When the COP renders Then mission labels and action paths explain the decision", () => {

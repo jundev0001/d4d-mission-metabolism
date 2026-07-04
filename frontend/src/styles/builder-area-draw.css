@@ -1,0 +1,133 @@
+.scenario-map-editor {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.scenario-map-editor .builder-editor-title {
+  grid-column: 1 / -1;
+}
+
+.scenario-map-settings,
+.scenario-map-canvas-panel {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.scenario-map-settings {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: center;
+}
+
+.scenario-map-settings .builder-field {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.area-draw-toolbar,
+.area-draw-actions {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.area-draw-toolbar {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+}
+
+.area-draw-toolbar .button,
+.area-draw-actions .button {
+  min-width: 0;
+  padding-inline: var(--space-2);
+  white-space: nowrap;
+}
+
+.area-draw-canvas {
+  width: 100%;
+  height: clamp(500px, 52vw, 680px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background:
+    linear-gradient(color-mix(in srgb, var(--border-subtle) 48%, transparent) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--border-subtle) 48%, transparent) 1px,
+      transparent 1px
+    ),
+    var(--surface-panel);
+  background-size:
+    10% 10%,
+    10% 10%,
+    auto;
+  touch-action: none;
+}
+
+.area-draw-canvas.is-drawing {
+  cursor: crosshair;
+}
+
+.area-draw-bg {
+  fill: var(--surface-inset);
+}
+
+.area-draw-shape {
+  fill: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+  stroke: color-mix(in srgb, var(--accent-primary) 58%, transparent);
+  stroke-width: 0.9;
+  vector-effect: non-scaling-stroke;
+}
+
+.area-draw-shape:not(.selected) {
+  opacity: 0.76;
+}
+
+.area-draw-shape.selected {
+  fill: color-mix(in srgb, var(--status-warning) 18%, transparent);
+  stroke: var(--status-warning);
+}
+
+.area-draw-draft {
+  fill: color-mix(in srgb, var(--status-info) 12%, transparent);
+  stroke: var(--status-info);
+  stroke-dasharray: 2 1.5;
+  stroke-width: 1;
+  cursor: move;
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.area-draw-bounds {
+  fill: transparent;
+  stroke: color-mix(in srgb, var(--status-info) 70%, transparent);
+  stroke-dasharray: 1.5 1.5;
+  stroke-width: 0.65;
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.area-draw-handle {
+  fill: var(--status-info);
+  stroke: var(--surface-inset);
+  stroke-width: 0.7;
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.area-draw-handle.nw,
+.area-draw-handle.se {
+  cursor: nwse-resize;
+}
+
+.area-draw-handle.ne,
+.area-draw-handle.sw {
+  cursor: nesw-resize;
+}
+
+@media (max-width: 820px) {
+  .area-draw-toolbar,
+  .area-draw-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .area-draw-canvas {
+    height: clamp(420px, 95vw, 560px);
+  }
+}

@@ -41,87 +41,91 @@ export function ScenarioMapEditor({
   return (
     <div className="builder-editor scenario-map-editor">
       <EditorHeader icon={<MapIcon size={14} />} label="구역 임무" />
-      <label className="builder-field">
-        <span>구역</span>
-        <select
-          value={selectedArea.id}
-          onChange={(event) => onSelectArea(event.currentTarget.value)}
-        >
-          {areas.map((area) => (
-            <option value={area.id} key={area.id}>
-              {area.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="builder-field">
-        <span>구역명</span>
-        <input
-          value={selectedArea.label}
-          onChange={(event) => onChange({ label: event.currentTarget.value })}
+      <div className="scenario-map-settings">
+        <label className="builder-field">
+          <span>구역</span>
+          <select
+            value={selectedArea.id}
+            onChange={(event) => onSelectArea(event.currentTarget.value)}
+          >
+            {areas.map((area) => (
+              <option value={area.id} key={area.id}>
+                {area.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="builder-field">
+          <span>구역명</span>
+          <input
+            value={selectedArea.label}
+            onChange={(event) => onChange({ label: event.currentTarget.value })}
+          />
+        </label>
+        <label className="builder-field">
+          <span>임무</span>
+          <select
+            value={selectedArea.mission_type}
+            onChange={(event) => {
+              const missionType = MissionTypes.find(
+                (value): value is MissionType => value === event.currentTarget.value,
+              )
+              if (missionType !== undefined) {
+                onChange({
+                  mission_type: missionType,
+                  requirements: requirementsForMissionType(missionType),
+                })
+              }
+            }}
+          >
+            {MissionTypes.map((missionType) => (
+              <option value={missionType} key={missionType}>
+                {missionTypeLabel(missionType)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <RangeField
+          label="우선순위"
+          max={1}
+          min={0}
+          step={0.01}
+          value={selectedArea.priority}
+          onChange={(value) => onChange({ priority: value })}
         />
-      </label>
-      <label className="builder-field">
-        <span>임무</span>
-        <select
-          value={selectedArea.mission_type}
-          onChange={(event) => {
-            const missionType = MissionTypes.find(
-              (value): value is MissionType => value === event.currentTarget.value,
-            )
-            if (missionType !== undefined) {
+        <RangeField
+          label="위협도"
+          max={1}
+          min={0}
+          step={0.01}
+          value={selectedArea.threat}
+          onChange={(value) => onChange({ threat: value })}
+        />
+        {CapabilityNames.map((capability) => (
+          <RangeField
+            key={capability}
+            label={capabilityLabel(capability)}
+            max={2}
+            min={0}
+            step={0.05}
+            value={selectedArea.requirements[capability]}
+            onChange={(value) =>
               onChange({
-                mission_type: missionType,
-                requirements: requirementsForMissionType(missionType),
+                requirements: { ...selectedArea.requirements, [capability]: value },
               })
             }
-          }}
-        >
-          {MissionTypes.map((missionType) => (
-            <option value={missionType} key={missionType}>
-              {missionTypeLabel(missionType)}
-            </option>
-          ))}
-        </select>
-      </label>
-      <RangeField
-        label="우선순위"
-        max={1}
-        min={0}
-        step={0.01}
-        value={selectedArea.priority}
-        onChange={(value) => onChange({ priority: value })}
-      />
-      <RangeField
-        label="위협도"
-        max={1}
-        min={0}
-        step={0.01}
-        value={selectedArea.threat}
-        onChange={(value) => onChange({ threat: value })}
-      />
-      {CapabilityNames.map((capability) => (
-        <RangeField
-          key={capability}
-          label={capabilityLabel(capability)}
-          max={2}
-          min={0}
-          step={0.05}
-          value={selectedArea.requirements[capability]}
-          onChange={(value) =>
-            onChange({
-              requirements: { ...selectedArea.requirements, [capability]: value },
-            })
-          }
+          />
+        ))}
+      </div>
+      <div className="scenario-map-canvas-panel">
+        <ScenarioAreaDrawControl
+          areas={areas}
+          selectedArea={selectedArea}
+          onAddArea={onAddArea}
+          onDeleteArea={onDeleteArea}
+          onReplaceArea={replaceAreaShape}
         />
-      ))}
-      <ScenarioAreaDrawControl
-        areas={areas}
-        selectedArea={selectedArea}
-        onAddArea={onAddArea}
-        onDeleteArea={onDeleteArea}
-        onReplaceArea={replaceAreaShape}
-      />
+      </div>
     </div>
   )
 }

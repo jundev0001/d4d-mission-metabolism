@@ -7,6 +7,9 @@
 @import "./styles/recommendation-history.css";
 @import "./styles/map.css";
 @import "./styles/builder.css";
+@import "./styles/builder-area-draw.css";
+@import "./styles/builder-flow-stage.css";
 @import "./styles/builder-graph.css";
 @import "./styles/builder-workspace.css";
+@import "./styles/builder-map-stage.css";
 @import "./styles/responsive.css";

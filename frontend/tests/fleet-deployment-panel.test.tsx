@@ -68,6 +68,19 @@ describe("fleet deployment panel", () => {
     expect(deployedAssetIcons[3]).toHaveAttribute("src", mapAssetIconHref("relay_uav"))
   })
 
+  it("Given deployment icons When the UxV count changes Then icon sources stay embedded image data", () => {
+    render(<FleetDeploymentPanel />)
+
+    fireEvent.click(screen.getByLabelText("중계 UAV 늘리기"))
+
+    for (const icon of [
+      ...screen.getAllByTestId("deployment-vehicle-type-icon"),
+      ...screen.getAllByTestId("deployed-asset-type-icon"),
+    ]) {
+      expect(icon).toHaveAttribute("src", expect.stringMatching(/^data:image\/png;base64,/))
+    }
+  })
+
   it("Given an edited deployment draft When live dashboard refreshes Then the edited count is preserved", async () => {
     render(<FleetDeploymentPanel />)
     const relayCountInput = screen.getByLabelText("중계 UAV 대수")

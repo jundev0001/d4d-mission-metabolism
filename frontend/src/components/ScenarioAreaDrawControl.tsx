@@ -6,17 +6,22 @@ import {
   MAX_AREA_POINTS,
   pointsToPath,
 } from "../customScenario"
+import { ScenarioAreaDraftOverlay } from "./ScenarioAreaDraftOverlay"
+import {
+  clamp,
+  type DraftPoint,
+  type DragDraft,
+  deltaBetween,
+  draftPointsFromPoints,
+  draftPointsFromRectangle,
+  hitShapeCorner,
+  pointInsideDraft,
+  resizeDraftPoints,
+  roundCoordinate,
+  translateDraftPoints,
+} from "./ScenarioAreaGeometry"
 
 type DrawMode = "add" | "replace"
-type DraftPoint = {
-  readonly key: string
-  readonly point: CustomPoint
-}
-type DragDraft = {
-  readonly current: CustomPoint
-  readonly origin: CustomPoint
-  readonly pointerId: number
-}
 
 export function ScenarioAreaDrawControl({
   areas,
@@ -37,7 +42,8 @@ export function ScenarioAreaDrawControl({
 
   function startDrawing(mode: DrawMode): void {
     setDrawMode(mode)
-    setDraftPoints([])
+    setDraftPoints(mode === "replace" ? draftPointsFromPoints(selectedArea.points) : [])
+    setDragDraft(null)
   }
 
   function cancelDrawing(): void {
@@ -73,8 +79,35 @@ export function ScenarioAreaDrawControl({
       return
     }
     const point = pointFromPointer(event)
-    event.currentTarget.setPointerCapture?.(event.pointerId)
-    setDragDraft({ current: point, origin: point, pointerId: event.pointerId })
+    const corner = hitShapeCorner(draftPoints, point)
+    if (corner !== null) {
+      setDragDraft({
+        corner,
+        current: point,
+        kind: "resize",
+        origin: point,
+        pointerId: event.pointerId,
+        startPoints: draftPoints,
+      })
+      return
+    }
+    if (pointInsideDraft(draftPoints, point)) {
+      setDragDraft({
+        current: point,
+        kind: "move",
+        origin: point,
+        pointerId: event.pointerId,
+        startPoints: draftPoints,
+      })
+      return
+    }
+    setDragDraft({
+      current: point,
+      kind: "create",
+      origin: point,
+      pointerId: event.pointerId,
+      startPoints: [],
+    })
     setDraftPoints([])
   }
 
@@ -83,25 +116,19 @@ export function ScenarioAreaDrawControl({
       return
     }
     const current = pointFromPointer(event)
-    setDragDraft({ ...dragDraft, current })
-    setDraftPoints(draftPointsFromRectangle(dragDraft.origin, current))
+    if (dragDraft.kind === "create") {
+      setDragDraft({ ...dragDraft, current })
+      setDraftPoints(draftPointsFromRectangle(dragDraft.origin, current))
+    }
   }
 
   function handleCanvasPointerUp(event: ReactPointerEvent<SVGSVGElement>): void {
     if (drawMode === null || dragDraft === null) {
       return
     }
-    if (event.currentTarget.hasPointerCapture?.(dragDraft.pointerId)) {
-      event.currentTarget.releasePointerCapture?.(dragDraft.pointerId)
-    }
-    const current = pointFromPointer(event)
-    const points = draftPointsFromRectangle(dragDraft.origin, current)
+    const points = currentDraftPoints(event, dragDraft)
     setDraftPoints(points)
     setDragDraft(null)
-    commitPoints(
-      drawMode,
-      points.map((draftPoint) => draftPoint.point),
-    )
   }
 
   return (
@@ -142,22 +169,7 @@ export function ScenarioAreaDrawControl({
             key={area.id}
           />
         ))}
-        {draftPoints.length > 0 ? (
-          <>
-            <path
-              className="area-draw-draft"
-              d={pointsToPath(draftPoints.map((draftPoint) => draftPoint.point))}
-            />
-            {draftPoints.map((draftPoint) => (
-              <circle
-                cx={draftPoint.point.x}
-                cy={draftPoint.point.y}
-                r="1.4"
-                key={draftPoint.key}
-              />
-            ))}
-          </>
-        ) : null}
+        <ScenarioAreaDraftOverlay draftPoints={draftPoints} showHandles={dragDraft === null} />
       </svg>
       {drawMode !== null ? (
         <div className="area-draw-actions">
@@ -182,34 +194,28 @@ export function ScenarioAreaDrawControl({
   )
 }
 
-function pointFromPointer(event: ReactPointerEvent<SVGSVGElement>): CustomPoint {
-  const rect = event.currentTarget.getBoundingClientRect()
+function pointFromPointer(event: ReactPointerEvent<SVGElement>): CustomPoint {
+  const svg = event.currentTarget.ownerSVGElement ?? event.currentTarget
+  const rect = svg.getBoundingClientRect()
   return {
-    x: roundCoordinate(((event.clientX - rect.left) / rect.width) * 100),
-    y: roundCoordinate(((event.clientY - rect.top) / rect.height) * 86),
+    x: roundCoordinate(clamp(((event.clientX - rect.left) / rect.width) * 100, 0, 100)),
+    y: roundCoordinate(clamp(((event.clientY - rect.top) / rect.height) * 86, 0, 86)),
   }
 }
 
-function draftPointsFromRectangle(
-  origin: CustomPoint,
-  current: CustomPoint,
+function currentDraftPoints(
+  event: ReactPointerEvent<SVGSVGElement>,
+  dragDraft: DragDraft,
 ): readonly DraftPoint[] {
-  const left = roundCoordinate(Math.min(origin.x, current.x))
-  const right = roundCoordinate(Math.max(origin.x, current.x))
-  const top = roundCoordinate(Math.min(origin.y, current.y))
-  const bottom = roundCoordinate(Math.max(origin.y, current.y))
-  if (right - left < 3 || bottom - top < 3) {
-    return []
+  const current = pointFromPointer(event)
+  if (dragDraft.kind === "create") {
+    return draftPointsFromRectangle(dragDraft.origin, current)
   }
-  const points = [
-    { x: left, y: top },
-    { x: right, y: top },
-    { x: right, y: bottom },
-    { x: left, y: bottom },
-  ] satisfies readonly CustomPoint[]
-  return points.map((point, index) => ({ key: `${point.x}-${point.y}-${index}`, point }))
-}
-
-function roundCoordinate(value: number): number {
-  return Number(value.toFixed(2))
+  if (dragDraft.kind === "move") {
+    return translateDraftPoints(dragDraft.startPoints, deltaBetween(dragDraft.origin, current))
+  }
+  if (dragDraft.corner === undefined) {
+    return dragDraft.startPoints
+  }
+  return resizeDraftPoints(dragDraft.startPoints, dragDraft.corner, current)
 }
