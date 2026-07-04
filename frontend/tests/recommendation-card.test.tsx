@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { RecommendationCardView, RecommendationPanel } from "../src/components/RecommendationPanel"
 import { useMissionStore } from "../src/store"
@@ -53,6 +53,45 @@ describe("recommendation card", () => {
     expect(screen.getByText("대기 1 / 전체 2")).toBeInTheDocument()
     expect(screen.getByTestId("decision-history")).toHaveTextContent("UxV-02 복귀 기준 미달")
     expect(screen.getByTestId("decision-history")).toHaveTextContent("승인됨")
+  })
+
+  it("Given mixed severity cards When rendering the queue Then critical cards appear first and equal severity keeps creation order", () => {
+    const highCard = {
+      ...makeRecommendationCard(),
+      id: "rec-001",
+      severity: "high",
+      title: "B area mission instability",
+      status: "pending",
+    } as const
+    const firstCriticalCard = {
+      ...makeRecommendationCard(),
+      id: "rec-002",
+      severity: "critical",
+      title: "UxV-03 link degraded",
+      status: "pending",
+    } as const
+    const secondCriticalCard = {
+      ...makeRecommendationCard(),
+      id: "rec-003",
+      severity: "critical",
+      title: "UxV-02 below return threshold",
+      status: "pending",
+    } as const
+    useMissionStore.setState({
+      dashboard: {
+        ...makeDashboardState(),
+        recommendations: [highCard, firstCriticalCard, secondCriticalCard],
+      },
+      replay: [],
+      lastError: null,
+    })
+
+    render(<RecommendationPanel />)
+
+    const titles = screen
+      .getAllByTestId("recommendation-card")
+      .map((card) => within(card).getByRole("heading", { level: 3 }).textContent)
+    expect(titles).toEqual(["UxV-03 링크 저하", "UxV-02 복귀 기준 미달", "B구역 임무 불안정"])
   })
 
   it("Given manual and rejected cards When rendering the queue Then both stay in the decision history", () => {

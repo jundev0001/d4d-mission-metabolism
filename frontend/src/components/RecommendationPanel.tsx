@@ -12,6 +12,10 @@ import { useMissionStore } from "../store"
 import type { DecisionAction, DecisionPayload, MicroActionType, RecommendationCard } from "../types"
 
 const EMPTY_RECOMMENDATIONS: readonly RecommendationCard[] = []
+const SEVERITY_PRIORITY: Readonly<Record<string, number>> = {
+  critical: 0,
+  high: 1,
+}
 
 type ResolvedRecommendationCard = RecommendationCard & {
   readonly status: Exclude<RecommendationCard["status"], "pending">
@@ -23,6 +27,14 @@ function isPendingCard(card: RecommendationCard): boolean {
 
 function isResolvedCard(card: RecommendationCard): card is ResolvedRecommendationCard {
   return card.status !== "pending"
+}
+
+function comparePendingCards(left: RecommendationCard, right: RecommendationCard): number {
+  return severityPriority(left) - severityPriority(right)
+}
+
+function severityPriority(card: RecommendationCard): number {
+  return SEVERITY_PRIORITY[card.severity] ?? 2
 }
 
 function buildDecisionPayload(
@@ -51,7 +63,7 @@ export function RecommendationPanel() {
     (state) => state.dashboard?.recommendations ?? EMPTY_RECOMMENDATIONS,
   )
   const decide = useMissionStore((state) => state.decide)
-  const pendingCards = cards.filter(isPendingCard)
+  const pendingCards = cards.filter(isPendingCard).toSorted(comparePendingCards)
   const resolvedCards = cards.filter(isResolvedCard).toReversed()
 
   return (
