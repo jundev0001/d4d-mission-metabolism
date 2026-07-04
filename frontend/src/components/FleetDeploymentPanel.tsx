@@ -1,6 +1,7 @@
-import { Boxes, Minus, Plus, Send } from "lucide-react"
+import { Minus, Plus, Send } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { capabilityLabel } from "../format"
+import { mapAssetIconHref } from "../mapAssetIcons"
 import { useMissionStore } from "../store"
 import type {
   FleetDeploymentItem,
@@ -94,7 +95,13 @@ function DeploymentRow({
 
   return (
     <div className="deployment-row">
-      <Boxes size={15} />
+      <img
+        alt=""
+        aria-hidden="true"
+        className="deployment-vehicle-icon"
+        data-testid="deployment-vehicle-type-icon"
+        src={mapAssetIconHref(profile.vehicle_type)}
+      />
       <span className="deployment-copy">
         <strong>{vehicleTypeLabel(profile.vehicle_type)}</strong>
         <small>{capabilityLabel(profile.primary_role)}</small>

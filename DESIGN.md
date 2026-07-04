@@ -136,10 +136,10 @@ All spacing derives from a 4px base.
 - **Motion**: transform/width transition on rail fill.
 
 ### COP Map
-- **Structure**: coordinate grid, sector polygons, sector MCC tags, relay routes, threat rings, no-go hatching, asset glyphs, legend, and compact readout.
+- **Structure**: coordinate grid, sector polygons, sector MCC tags, relay routes, threat rings, no-go hatching, generated vehicle-type asset icons, legend, and compact readout.
 - **Variants**: normal, 전자전 압력, no-go, degraded asset.
 - **Spacing**: fills map panel, stable aspect ratio, readout below the map frame.
-- **States**: threat/no-go overlays are data-driven, not decorative; asset status changes via ring color and opacity.
+- **States**: threat/no-go overlays are data-driven, not decorative; asset status changes via ring color and opacity while the vehicle-type icon remains recognizable.
 - **Accessibility**: labelled region and text fallback summary.
 - **Motion**: no decorative drift; asset movement uses transform only when simulator state changes and respects reduced motion.
 

@@ -94,6 +94,18 @@ describe("map view", () => {
     expect(wheelEvent.defaultPrevented).toBe(true)
   })
 
+  it("Given mixed vehicle types When the COP renders Then each asset uses its vehicle icon image", () => {
+    useMissionStore.setState({ dashboard: makeMapDashboard() })
+    render(<MapView />)
+
+    expect(assetIconHref("UxV-01")).toContain("fixedwing_survey_uav")
+    expect(assetIconHref("UxV-02")).toContain("micro_scout_uav")
+    expect(assetIconHref("UxV-03")).toContain("overwatch_uav")
+    expect(assetIconHref("UxV-04")).toContain("relay_uav")
+    expect(assetIconHref("UxV-05")).toContain("sensor_rover")
+    expect(assetIconHref("UxV-06")).toContain("scout_rover")
+  })
+
   it("Given deployed UxVs When an asset is removed from the COP menu Then fleet deployment is updated", async () => {
     useMissionStore.setState({ dashboard: makeMapDashboard() })
     render(<MapView />)
@@ -119,4 +131,14 @@ function copSvg(): SVGSVGElement {
     return svg
   }
   throw new TypeError("COP SVG not found")
+}
+
+function assetIconHref(vehicleId: string): string {
+  const icon = screen
+    .getByLabelText(`${vehicleId} 자산 정보`)
+    .querySelector("[data-testid='asset-type-icon']")
+  if (icon instanceof Element) {
+    return icon.getAttribute("href") ?? ""
+  }
+  throw new TypeError(`${vehicleId} icon not found`)
 }

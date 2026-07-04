@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { FleetDeploymentPanel } from "../src/components/FleetDeploymentPanel"
+import { mapAssetIconHref } from "../src/mapAssetIcons"
 import { useMissionStore } from "../src/store"
 import { DashboardStateSchema } from "../src/types"
 import type { VehicleTypeProfile } from "../src/vehicleDeployment"
@@ -47,6 +48,18 @@ describe("fleet deployment panel", () => {
         { vehicle_type: "sensor_rover", count: 1 },
       ])
     })
+  })
+
+  it("Given deployment options and map assets When the panel renders Then vehicle-type icons are shown in both lists", () => {
+    render(<FleetDeploymentPanel />)
+
+    const deploymentIcons = screen.getAllByTestId("deployment-vehicle-type-icon")
+    const deployedAssetIcons = screen.getAllByTestId("deployed-asset-type-icon")
+
+    expect(deploymentIcons).toHaveLength(vehicleProfiles.length)
+    expect(deployedAssetIcons).toHaveLength(6)
+    expect(deploymentIcons[0]).toHaveAttribute("src", mapAssetIconHref("fixedwing_survey_uav"))
+    expect(deployedAssetIcons[3]).toHaveAttribute("src", mapAssetIconHref("relay_uav"))
   })
 })
 

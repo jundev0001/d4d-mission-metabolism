@@ -1,5 +1,6 @@
 import type { MouseEvent as ReactMouseEvent } from "react"
 import { capabilityLabel, formatPercent, targetLabel } from "../format"
+import { mapAssetIconHref } from "../mapAssetIcons"
 import type { Vehicle } from "../types"
 import { vehicleTypeLabel } from "../vehicleDeployment"
 
@@ -55,6 +56,7 @@ export function MapAssetGlyph({
     active ? "asset-active" : ""
   }`
   const radius = vehicle.synthetic ? 0.62 : 1.2
+  const iconSize = vehicle.synthetic ? 3.4 : 4.8
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: SVG map glyphs expose hover/focus details and context menu actions.
@@ -74,9 +76,19 @@ export function MapAssetGlyph({
       <title>{assetDescription(vehicle, availability)}</title>
       <circle className="asset-hitbox" cx="0" cy="0" r={radius + 3.3} />
       <circle className="asset-ring" cx="0" cy="0" r={radius + 0.82} />
-      <circle className="asset-core" cx="0" cy="0" r={radius} />
+      <image
+        className="asset-type-icon"
+        data-testid="asset-type-icon"
+        focusable="false"
+        height={iconSize}
+        href={mapAssetIconHref(vehicle.type)}
+        preserveAspectRatio="xMidYMid meet"
+        width={iconSize}
+        x={-iconSize / 2}
+        y={-iconSize / 2}
+      />
       {!vehicle.synthetic ? (
-        <text x="2.05" y="0.9" className="asset-label">
+        <text x="2.8" y="0.9" className="asset-label">
           {vehicle.id}
         </text>
       ) : null}

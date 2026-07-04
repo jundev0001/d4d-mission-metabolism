@@ -1,5 +1,6 @@
-import { Boxes, Trash2 } from "lucide-react"
+import { Trash2 } from "lucide-react"
 import { capabilityLabel, targetLabel } from "../format"
+import { mapAssetIconHref } from "../mapAssetIcons"
 import type { Vehicle } from "../types"
 import { isDeployableVehicleType, type VehicleType, vehicleTypeLabel } from "../vehicleDeployment"
 
@@ -27,7 +28,13 @@ export function FleetAssetList(props: FleetAssetListProps) {
       <div className="deployed-asset-list">
         {removableVehicles.map((vehicle) => (
           <div className="deployed-asset-row" key={vehicle.id}>
-            <Boxes size={14} />
+            <img
+              alt=""
+              aria-hidden="true"
+              className="deployment-vehicle-icon"
+              data-testid="deployed-asset-type-icon"
+              src={mapAssetIconHref(vehicle.type)}
+            />
             <span className="deployment-copy">
               <strong>{vehicle.id}</strong>
               <small>
