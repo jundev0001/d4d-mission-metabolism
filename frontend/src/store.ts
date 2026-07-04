@@ -218,7 +218,12 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
     return connectLiveDashboard({
       fetchDashboardState,
       websocketUrl: websocketUrl(),
-      onDashboard: (dashboard) => set({ dashboard, lastError: null }),
+      onDashboard: (dashboard) => {
+        if (get().isRunningDemo) {
+          return
+        }
+        set({ dashboard, lastError: null })
+      },
       onError: (message) => set({ lastError: message === "" ? null : message }),
     })
   },

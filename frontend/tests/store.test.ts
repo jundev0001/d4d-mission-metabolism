@@ -196,6 +196,25 @@ describe("mission store", () => {
     expect(socket?.closed).toBe(true)
   })
 
+  it("Given a custom scenario run When stale live state arrives Then scenario-owned judgment state is preserved", () => {
+    const scenarioDashboard = {
+      ...makeDashboardState(),
+      mission: {
+        ...makeDashboardState().mission,
+        objective: "Custom event flow",
+      },
+    }
+    const staleDashboard = makeDashboardState()
+    useMissionStore.setState({ dashboard: scenarioDashboard, isRunningDemo: true })
+
+    const cleanup = useMissionStore.getState().connectLive()
+    const socket = FakeWebSocket.instances.at(0)
+    socket?.sendMessage(JSON.stringify(staleDashboard))
+
+    expect(useMissionStore.getState().dashboard?.mission.objective).toBe("Custom event flow")
+    cleanup()
+  })
+
   it("Given live websocket failure When the stream errors Then REST polling keeps state fresh", async () => {
     vi.useFakeTimers()
     const dashboard = makeDashboardState()
