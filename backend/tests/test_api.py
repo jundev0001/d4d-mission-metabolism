@@ -133,6 +133,17 @@ def test_api_accepts_new_tactical_immune_event_targets() -> None:
     assert vehicle_event.json()["recommendations"][0]["actions"][0]["action"] == "reroute"
 
 
+def test_api_allocate_applies_and_explains() -> None:
+    client = TestClient(create_app())
+
+    response = client.post("/allocate")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["assignments"]) > 0
+    assert len(body["explanations"]) > 0
+
+
 def test_api_rejects_empty_deployment() -> None:
     client = TestClient(create_app())
 
