@@ -28,7 +28,7 @@ export function ScenarioAreaDrawControl({
   readonly areas: readonly CustomMapArea[]
   readonly onAddArea: (points: readonly CustomPoint[]) => void
   readonly onDeleteArea: () => void
-  readonly onReplaceArea: (points: CustomPoint[]) => void
+  readonly onReplaceArea: (points: readonly CustomPoint[]) => void
   readonly selectedArea: CustomMapArea
 }) {
   const [drawMode, setDrawMode] = useState<DrawMode | null>(null)
@@ -50,8 +50,17 @@ export function ScenarioAreaDrawControl({
     if (draftPoints.length < 3 || drawMode === null) {
       return
     }
-    const points = draftPoints.map((draftPoint) => draftPoint.point)
-    if (drawMode === "add") {
+    commitPoints(
+      drawMode,
+      draftPoints.map((draftPoint) => draftPoint.point),
+    )
+  }
+
+  function commitPoints(mode: DrawMode, points: readonly CustomPoint[]): void {
+    if (points.length < 3) {
+      return
+    }
+    if (mode === "add") {
       onAddArea(points)
     } else {
       onReplaceArea(points)
@@ -86,8 +95,13 @@ export function ScenarioAreaDrawControl({
       event.currentTarget.releasePointerCapture?.(dragDraft.pointerId)
     }
     const current = pointFromPointer(event)
-    setDraftPoints(draftPointsFromRectangle(dragDraft.origin, current))
+    const points = draftPointsFromRectangle(dragDraft.origin, current)
+    setDraftPoints(points)
     setDragDraft(null)
+    commitPoints(
+      drawMode,
+      points.map((draftPoint) => draftPoint.point),
+    )
   }
 
   return (
@@ -130,11 +144,9 @@ export function ScenarioAreaDrawControl({
         ))}
         {draftPoints.length > 0 ? (
           <>
-            <polyline
+            <path
               className="area-draw-draft"
-              points={draftPoints
-                .map((draftPoint) => `${draftPoint.point.x},${draftPoint.point.y}`)
-                .join(" ")}
+              d={pointsToPath(draftPoints.map((draftPoint) => draftPoint.point))}
             />
             {draftPoints.map((draftPoint) => (
               <circle

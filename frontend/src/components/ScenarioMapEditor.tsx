@@ -27,10 +27,11 @@ export function ScenarioMapEditor({
   readonly onSelectArea: (areaId: string) => void
   readonly selectedArea: CustomMapArea
 }) {
-  function replaceAreaShape(points: CustomPoint[]): void {
-    const centroid = areaCentroid({ points })
+  function replaceAreaShape(points: readonly CustomPoint[]): void {
+    const areaPoints = points.map((point) => ({ x: point.x, y: point.y }))
+    const centroid = areaCentroid({ points: areaPoints })
     onChange({
-      points,
+      points: areaPoints,
       label_position: { x: clamp(centroid.x - 6, 0, 100), y: clamp(centroid.y - 3, 0, 86) },
       metric_position: { x: clamp(centroid.x - 6, 0, 100), y: clamp(centroid.y + 3, 0, 86) },
       threat_position: centroid,
@@ -38,7 +39,7 @@ export function ScenarioMapEditor({
   }
 
   return (
-    <div className="builder-editor">
+    <div className="builder-editor scenario-map-editor">
       <EditorHeader icon={<MapIcon size={14} />} label="구역 임무" />
       <label className="builder-field">
         <span>구역</span>

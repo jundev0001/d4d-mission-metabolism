@@ -233,7 +233,7 @@
 }
 
 .area-draw-toolbar {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
 }
 
 .area-draw-toolbar .button,
@@ -245,7 +245,7 @@
 
 .area-draw-canvas {
   width: 100%;
-  aspect-ratio: 100 / 86;
+  height: clamp(360px, 42vw, 520px);
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   background: var(--surface-panel);
@@ -273,7 +273,7 @@
 }
 
 .area-draw-draft {
-  fill: none;
+  fill: color-mix(in srgb, var(--status-info) 12%, transparent);
   stroke: var(--status-info);
   stroke-dasharray: 2 1.5;
   stroke-width: 1;
