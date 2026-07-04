@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { type EventPayload, EventTypes } from "./types"
+import { EventTypes } from "./types"
 
 export const ScenarioTargets = [
   "A",
@@ -17,6 +17,8 @@ export const ScenarioTargets = [
 const VIEWBOX_HEIGHT = 86
 const MIN_AREA_SIZE = 10
 const MAX_AREA_SIZE = 68
+export const MAX_SCENARIO_NODES = 12
+export const MAX_SCENARIO_EDGES = 24
 
 const Percent = z.number().min(0).max(1)
 const Coordinate = z.number().min(0).max(100)
@@ -61,8 +63,8 @@ export const CustomScenarioDocumentSchema = z.object({
   scenario: z.object({
     name: z.string().min(1).max(48),
     entry_node_id: z.string().min(1),
-    nodes: z.array(CustomScenarioNodeSchema).min(1).max(8),
-    edges: z.array(CustomScenarioEdgeSchema).max(12),
+    nodes: z.array(CustomScenarioNodeSchema).min(1).max(MAX_SCENARIO_NODES),
+    edges: z.array(CustomScenarioEdgeSchema).max(MAX_SCENARIO_EDGES),
   }),
 })
 
@@ -70,6 +72,7 @@ export type CustomMapArea = z.infer<typeof CustomMapAreaSchema>
 export type CustomScenarioDocument = z.infer<typeof CustomScenarioDocumentSchema>
 export type CustomScenarioNode = CustomScenarioDocument["scenario"]["nodes"][number]
 export type CustomScenarioEvent = CustomScenarioNode["event"]
+export type CustomScenarioEdge = CustomScenarioDocument["scenario"]["edges"][number]
 
 export function areaPath(area: CustomMapArea): string {
   const halfWidth = area.size.width / 2
@@ -93,92 +96,6 @@ export function serializeCustomScenario(document: CustomScenarioDocument): strin
 
 export function parseCustomScenarioText(text: string): CustomScenarioDocument {
   return CustomScenarioDocumentSchema.parse(JSON.parse(text))
-}
-
-export function orderedCustomEvents(document: CustomScenarioDocument): readonly EventPayload[] {
-  const nodesById = new Map(document.scenario.nodes.map((node) => [node.id, node]))
-  const firstEdgeBySource = new Map(document.scenario.edges.map((edge) => [edge.from, edge.to]))
-  const visited = new Set<string>()
-  const ordered: EventPayload[] = []
-  let currentId: string | undefined = document.scenario.entry_node_id
-
-  while (currentId !== undefined && !visited.has(currentId)) {
-    const node = nodesById.get(currentId)
-    if (node === undefined) {
-      break
-    }
-    visited.add(currentId)
-    ordered.push(node.event)
-    currentId = firstEdgeBySource.get(currentId)
-  }
-
-  for (const node of document.scenario.nodes) {
-    if (!visited.has(node.id)) {
-      ordered.push(node.event)
-    }
-  }
-
-  return ordered
-}
-
-export function withMapName(
-  document: CustomScenarioDocument,
-  name: string,
-): CustomScenarioDocument {
-  return { ...document, map: { ...document.map, name } }
-}
-
-export function withScenarioName(
-  document: CustomScenarioDocument,
-  name: string,
-): CustomScenarioDocument {
-  return { ...document, scenario: { ...document.scenario, name } }
-}
-
-export function withMapArea(
-  document: CustomScenarioDocument,
-  areaId: string,
-  patch: Partial<Omit<CustomMapArea, "id">>,
-): CustomScenarioDocument {
-  return {
-    ...document,
-    map: {
-      ...document.map,
-      areas: document.map.areas.map((area) => (area.id === areaId ? { ...area, ...patch } : area)),
-    },
-  }
-}
-
-export function withScenarioNodeEvent(
-  document: CustomScenarioDocument,
-  nodeId: string,
-  event: Partial<CustomScenarioEvent>,
-): CustomScenarioDocument {
-  return {
-    ...document,
-    scenario: {
-      ...document.scenario,
-      nodes: document.scenario.nodes.map((node) =>
-        node.id === nodeId ? { ...node, event: { ...node.event, ...event } } : node,
-      ),
-    },
-  }
-}
-
-export function withScenarioNodePosition(
-  document: CustomScenarioDocument,
-  nodeId: string,
-  position: CustomScenarioNode["position"],
-): CustomScenarioDocument {
-  return {
-    ...document,
-    scenario: {
-      ...document.scenario,
-      nodes: document.scenario.nodes.map((node) =>
-        node.id === nodeId ? { ...node, position } : node,
-      ),
-    },
-  }
 }
 
 function clamp(value: number, min: number, max: number): number {

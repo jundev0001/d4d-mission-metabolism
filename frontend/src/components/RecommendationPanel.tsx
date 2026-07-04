@@ -1,4 +1,4 @@
-import { Check, Hand, ListChecks, X } from "lucide-react"
+import { Check, Hand, History, ListChecks, X } from "lucide-react"
 import {
   areaLabel,
   causeLabel,
@@ -12,6 +12,18 @@ import { useMissionStore } from "../store"
 import type { DecisionAction, DecisionPayload, MicroActionType, RecommendationCard } from "../types"
 
 const EMPTY_RECOMMENDATIONS: readonly RecommendationCard[] = []
+
+type ResolvedRecommendationCard = RecommendationCard & {
+  readonly status: Exclude<RecommendationCard["status"], "pending">
+}
+
+function isPendingCard(card: RecommendationCard): boolean {
+  return card.status === "pending"
+}
+
+function isResolvedCard(card: RecommendationCard): card is ResolvedRecommendationCard {
+  return card.status !== "pending"
+}
 
 function buildDecisionPayload(
   recommendationId: string,
@@ -39,24 +51,25 @@ export function RecommendationPanel() {
     (state) => state.dashboard?.recommendations ?? EMPTY_RECOMMENDATIONS,
   )
   const decide = useMissionStore((state) => state.decide)
-  const pendingCount = cards.filter((card) => card.status === "pending").length
+  const pendingCards = cards.filter(isPendingCard)
+  const resolvedCards = cards.filter(isResolvedCard).toReversed()
 
   return (
     <section className="panel recommendation-panel" data-testid="recommendation-panel">
       <div className="panel-title">
         <span>판단 대기열</span>
         <span className="caption">
-          대기 {pendingCount} / 전체 {cards.length}
+          대기 {pendingCards.length} / 전체 {cards.length}
         </span>
       </div>
-      <div className="recommendation-list">
-        {cards.length === 0 ? (
+      <div className="recommendation-list" data-testid="recommendation-queue">
+        {pendingCards.length === 0 ? (
           <div className="empty-state">
             <ListChecks size={18} aria-hidden="true" />
             <span>사람 승인 대기 없음</span>
           </div>
         ) : (
-          cards.map((card) => (
+          pendingCards.map((card) => (
             <RecommendationCardView
               key={card.id}
               card={card}
@@ -67,6 +80,7 @@ export function RecommendationPanel() {
           ))
         )}
       </div>
+      <DecisionHistory cards={resolvedCards} />
     </section>
   )
 }
@@ -153,5 +167,36 @@ export function RecommendationCardView(props: RecommendationCardViewProps) {
         </button>
       </div>
     </article>
+  )
+}
+
+type DecisionHistoryProps = {
+  readonly cards: readonly ResolvedRecommendationCard[]
+}
+
+function DecisionHistory(props: DecisionHistoryProps) {
+  return (
+    <section className="decision-history" aria-label="판단 로그" data-testid="decision-history">
+      <div className="decision-history-title">
+        <span>판단 로그</span>
+        <span className="caption">{props.cards.length}개 처리</span>
+      </div>
+      {props.cards.length === 0 ? (
+        <div className="decision-history-empty">
+          <History size={16} aria-hidden="true" />
+          <span>처리된 판단 없음</span>
+        </div>
+      ) : (
+        <ol className="decision-history-list">
+          {props.cards.map((card) => (
+            <li className={`decision-history-row ${card.status}`} key={card.id}>
+              <span className="status-pill">{statusLabel(card.status)}</span>
+              <span>{recommendationTitleLabel(card.title)}</span>
+              <span className="caption">{card.actions.length}개 조치</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   )
 }

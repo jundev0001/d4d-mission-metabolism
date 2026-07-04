@@ -7,6 +7,11 @@ import {
   type ReplayResponse,
   ReplayResponseSchema,
 } from "./types"
+import {
+  type FleetDeploymentPayload,
+  type VehicleTypeCatalogResponse,
+  VehicleTypeCatalogResponseSchema,
+} from "./vehicleDeployment"
 
 const API_BASE = import.meta.env["VITE_API_BASE_URL"] ?? "http://127.0.0.1:8000"
 
@@ -27,6 +32,16 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
 export async function resetMission(seed: number): Promise<DashboardState> {
   const payload = await client.post("mission", { json: { seed } }).json()
+  return DashboardStateSchema.parse(payload)
+}
+
+export async function fetchVehicleTypes(): Promise<VehicleTypeCatalogResponse> {
+  const payload = await client.get("vehicle/types").json()
+  return VehicleTypeCatalogResponseSchema.parse(payload)
+}
+
+export async function deployFleet(items: FleetDeploymentPayload): Promise<DashboardState> {
+  const payload = await client.post("fleet/deploy", { json: { items } }).json()
   return DashboardStateSchema.parse(payload)
 }
 

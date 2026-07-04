@@ -2,12 +2,15 @@ import { create } from "zustand"
 import {
   fetchDashboardState,
   fetchReplay,
+  fetchVehicleTypes,
   injectEvent as postEvent,
+  deployFleet as postFleetDeployment,
   resetMission,
   sendDecision,
   websocketUrl,
 } from "./api"
-import { type CustomScenarioDocument, orderedCustomEvents } from "./customScenario"
+import type { CustomScenarioDocument } from "./customScenario"
+import { customScenarioEventBatches } from "./customScenarioGraph"
 import { DEFAULT_CUSTOM_SCENARIO } from "./defaultCustomScenario"
 import type { BlackBoxEntry } from "./types"
 import {
@@ -16,6 +19,7 @@ import {
   type DecisionPayload,
   type EventPayload,
 } from "./types"
+import type { FleetDeploymentPayload, VehicleTypeProfile } from "./vehicleDeployment"
 
 const SCRIPTED_EVENTS: readonly EventPayload[] = [
   { event_type: "comm_jam", target: "B", severity: 0.82 },
@@ -27,6 +31,7 @@ const SCRIPTED_EVENTS: readonly EventPayload[] = [
 type MissionStore = {
   readonly dashboard: DashboardState | null
   readonly replay: readonly BlackBoxEntry[]
+  readonly vehicleTypeProfiles: readonly VehicleTypeProfile[]
   readonly isLoading: boolean
   readonly isRunningDemo: boolean
   readonly selectedReplayIndex: number
@@ -35,6 +40,7 @@ type MissionStore = {
   readonly hydrate: () => Promise<void>
   readonly acceptSnapshot: (dashboard: DashboardState) => void
   readonly reset: () => Promise<void>
+  readonly deployFleet: (items: FleetDeploymentPayload) => Promise<void>
   readonly injectEvent: (event: EventPayload) => Promise<void>
   readonly decide: (decision: DecisionPayload) => Promise<void>
   readonly runScriptedDemo: () => Promise<void>
@@ -47,6 +53,7 @@ type MissionStore = {
 export const useMissionStore = create<MissionStore>()((set, get) => ({
   dashboard: null,
   replay: [],
+  vehicleTypeProfiles: [],
   isLoading: true,
   isRunningDemo: false,
   selectedReplayIndex: 0,
@@ -55,9 +62,18 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
 
   hydrate: async () => {
     try {
-      const dashboard = await fetchDashboardState()
-      const replay = await fetchReplay()
-      set({ dashboard, replay: replay.entries, isLoading: false, lastError: null })
+      const [dashboard, replay, vehicleTypes] = await Promise.all([
+        fetchDashboardState(),
+        fetchReplay(),
+        fetchVehicleTypes(),
+      ])
+      set({
+        dashboard,
+        replay: replay.entries,
+        vehicleTypeProfiles: vehicleTypes.profiles,
+        isLoading: false,
+        lastError: null,
+      })
     } catch (error) {
       set({ isLoading: false, lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
     }
@@ -70,6 +86,16 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
   reset: async () => {
     try {
       const dashboard = await resetMission(42)
+      const replay = await fetchReplay()
+      set({ dashboard, replay: replay.entries, selectedReplayIndex: 0, lastError: null })
+    } catch (error) {
+      set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
+    }
+  },
+
+  deployFleet: async (items) => {
+    try {
+      const dashboard = await postFleetDeployment(items)
       const replay = await fetchReplay()
       set({ dashboard, replay: replay.entries, selectedReplayIndex: 0, lastError: null })
     } catch (error) {
@@ -122,8 +148,8 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
     set({ isRunningDemo: true, lastError: null })
     try {
       await get().reset()
-      await orderedCustomEvents(get().customScenario).reduce(
-        (sequence, event) => sequence.then(() => injectDemoEvent(event, get)),
+      await customScenarioEventBatches(get().customScenario).reduce(
+        (sequence, events) => sequence.then(() => injectDemoEventBatch(events, get)),
         Promise.resolve(),
       )
     } catch (error) {
@@ -165,4 +191,14 @@ function delay(milliseconds: number): Promise<void> {
 
 function injectDemoEvent(event: EventPayload, getStore: () => MissionStore): Promise<void> {
   return delay(500).then(() => getStore().injectEvent(event))
+}
+
+async function injectDemoEventBatch(
+  events: readonly EventPayload[],
+  getStore: () => MissionStore,
+): Promise<void> {
+  await delay(500)
+  for (const event of events) {
+    await getStore().injectEvent(event)
+  }
 }

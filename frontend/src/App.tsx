@@ -3,6 +3,7 @@ import { BlackBoxPanel } from "./components/BlackBoxPanel"
 import { CapabilityPanel } from "./components/CapabilityPanel"
 import { EvaluationPanel } from "./components/EvaluationPanel"
 import { EventControls } from "./components/EventControls"
+import { FleetDeploymentPanel } from "./components/FleetDeploymentPanel"
 import { Header } from "./components/Header"
 import { MapView } from "./components/MapView"
 import { MetricStrip } from "./components/MetricStrip"
@@ -85,6 +86,7 @@ function MissionWorkspace() {
     <section className="workspace" aria-label="임무 판단 작업면">
       <aside className="left-rail">
         <EventControls />
+        <FleetDeploymentPanel />
         <CapabilityPanel />
       </aside>
       <section className="center-stage">

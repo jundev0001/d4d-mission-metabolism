@@ -3,18 +3,30 @@ import { type ChangeEvent, useRef, useState } from "react"
 import {
   type CustomMapArea,
   type CustomScenarioDocument,
+  type CustomScenarioEdge,
   type CustomScenarioNode,
+  MAX_SCENARIO_NODES,
   parseCustomScenarioText,
   serializeCustomScenario,
+} from "../customScenario"
+import {
+  addParallelScenarioNode,
+  addScenarioNode,
+  insertScenarioNodeAfter,
+  removeScenarioEdge,
+  removeScenarioNode,
+  setScenarioEntryNode,
+  upsertScenarioEdge,
   withMapArea,
   withMapName,
   withScenarioName,
   withScenarioNodeEvent,
   withScenarioNodePosition,
-} from "../customScenario"
+} from "../customScenarioMutations"
 import { useMissionStore } from "../store"
 import { ScenarioMapEditor, ScenarioNodeEditor } from "./ScenarioBuilderEditors"
 import { ScenarioFlowCanvas } from "./ScenarioFlowCanvas"
+import { ScenarioGraphEditor } from "./ScenarioGraphEditor"
 
 export function ScenarioBuilderPanel() {
   const scenario = useMissionStore((state) => state.customScenario)
@@ -24,6 +36,8 @@ export function ScenarioBuilderPanel() {
   const [selectedNodeId, setSelectedNodeId] = useState(scenario.scenario.entry_node_id)
   const [selectedAreaId, setSelectedAreaId] = useState("A")
   const [importError, setImportError] = useState<string | null>(null)
+  const [flowNotice, setFlowNotice] = useState<string | null>(null)
+  const [connectFromNodeId, setConnectFromNodeId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const selectedNode =
     scenario.scenario.nodes.find((node) => node.id === selectedNodeId) ??
@@ -39,6 +53,7 @@ export function ScenarioBuilderPanel() {
 
   function updateScenario(document: CustomScenarioDocument): void {
     setCustomScenario(document)
+    setFlowNotice(null)
   }
 
   function updateSelectedNode(event: Partial<CustomScenarioNode["event"]>): void {
@@ -57,6 +72,47 @@ export function ScenarioBuilderPanel() {
     link.download = "d4d-custom-scenario.json"
     link.click()
     URL.revokeObjectURL(url)
+  }
+
+  function applyNodeMutation(
+    mutation: (
+      document: CustomScenarioDocument,
+      nodeId: string,
+    ) => {
+      readonly document: CustomScenarioDocument
+      readonly selectedNodeId: string
+    },
+  ): void {
+    const result = mutation(scenario, activeNode.id)
+    setSelectedNodeId(result.selectedNodeId)
+    updateScenario(result.document)
+  }
+
+  function handleAddNode(): void {
+    const result = addScenarioNode(scenario)
+    setSelectedNodeId(result.selectedNodeId)
+    updateScenario(result.document)
+  }
+
+  function handleAddEdge(edge: CustomScenarioEdge): void {
+    const next = upsertScenarioEdge(scenario, edge)
+    if (next === scenario) {
+      setFlowNotice("연결 실패: 이미 연결됐거나 순환 연결입니다.")
+      return
+    }
+    updateScenario(next)
+  }
+
+  function handleConnectNode(toNodeId: string): void {
+    if (connectFromNodeId === null) {
+      return
+    }
+    handleAddEdge({ from: connectFromNodeId, to: toNodeId })
+    setConnectFromNodeId(null)
+  }
+
+  function handleRemoveEdge(edge: CustomScenarioEdge): void {
+    updateScenario(removeScenarioEdge(scenario, edge))
   }
 
   async function handleImport(event: ChangeEvent<HTMLInputElement>): Promise<void> {
@@ -112,7 +168,12 @@ export function ScenarioBuilderPanel() {
           onChange={(event) => void handleImport(event)}
         />
       </div>
-      {importError ? <p className="builder-error">가져오기 실패: {importError}</p> : null}
+      {importError || flowNotice ? (
+        <div className="builder-message-row">
+          {importError ? <p className="builder-error">가져오기 실패: {importError}</p> : null}
+          {flowNotice ? <p className="builder-error">{flowNotice}</p> : null}
+        </div>
+      ) : null}
 
       <div className="builder-meta-grid">
         <label className="builder-field">
@@ -134,8 +195,11 @@ export function ScenarioBuilderPanel() {
       </div>
 
       <ScenarioFlowCanvas
+        connectFromNodeId={connectFromNodeId}
         document={scenario}
         selectedNodeId={activeNode.id}
+        onConnectNode={handleConnectNode}
+        onRemoveEdge={handleRemoveEdge}
         onSelectNode={setSelectedNodeId}
         onMoveNode={(nodeId, position) =>
           updateScenario(withScenarioNodePosition(scenario, nodeId, position))
@@ -144,12 +208,30 @@ export function ScenarioBuilderPanel() {
 
       <div className="builder-side-stack">
         <ScenarioNodeEditor node={activeNode} onChange={updateSelectedNode} />
+        <ScenarioGraphEditor
+          connectFromNodeId={connectFromNodeId}
+          document={scenario}
+          selectedNodeId={activeNode.id}
+          onAddEdge={handleAddEdge}
+          onAddNode={handleAddNode}
+          onAddParallelNode={() => applyNodeMutation(addParallelScenarioNode)}
+          onCancelConnection={() => setConnectFromNodeId(null)}
+          onDeleteNode={() => applyNodeMutation(removeScenarioNode)}
+          onInsertAfter={() => applyNodeMutation(insertScenarioNodeAfter)}
+          onRemoveEdge={handleRemoveEdge}
+          onSetEntry={() => updateScenario(setScenarioEntryNode(scenario, activeNode.id))}
+          onStartConnection={() => setConnectFromNodeId(activeNode.id)}
+        />
         <ScenarioMapEditor
           areas={scenario.map.areas}
           selectedArea={activeArea}
           onSelectArea={setSelectedAreaId}
           onChange={updateSelectedArea}
         />
+        <p className="builder-hint">
+          노드 {scenario.scenario.nodes.length}/{MAX_SCENARIO_NODES} · 연결{" "}
+          {scenario.scenario.edges.length}
+        </p>
       </div>
     </section>
   )

@@ -1,0 +1,124 @@
+.deployment-panel {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.deployment-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.deployment-row {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--surface-inset);
+}
+
+.deployment-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.deployment-copy strong,
+.deployment-copy small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deployment-copy strong {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 590;
+  line-height: 1.25;
+}
+
+.deployment-copy small {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.deployment-stepper {
+  display: grid;
+  grid-template-columns: 30px 44px 30px;
+  gap: var(--space-1);
+}
+
+.deployment-stepper .button {
+  min-height: 30px;
+  padding: 0;
+}
+
+.deployment-stepper input {
+  width: 44px;
+  min-width: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: center;
+}
+
+.deployment-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.deployment-warning {
+  color: var(--status-warning);
+}
+
+.deployment-subtitle {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 590;
+}
+
+.deployed-assets,
+.deployed-asset-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.deployed-assets {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.deployed-asset-list {
+  max-height: 172px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.deployed-asset-row {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 30px;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface-inset) 82%, var(--surface-panel));
+}
+
+.deployed-asset-remove {
+  min-height: 30px;
+  padding: 0;
+}

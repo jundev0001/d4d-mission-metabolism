@@ -20,6 +20,11 @@
   grid-column: 1 / -1;
 }
 
+.builder-message-row {
+  display: grid;
+  gap: var(--space-1);
+}
+
 .builder-error {
   color: var(--status-danger);
   font-size: 12px;

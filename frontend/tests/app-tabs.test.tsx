@@ -28,6 +28,10 @@ vi.mock("../src/components/EventControls", () => ({
   EventControls: () => <section>이벤트 컨트롤</section>,
 }))
 
+vi.mock("../src/components/FleetDeploymentPanel", () => ({
+  FleetDeploymentPanel: () => <section>배치 패널</section>,
+}))
+
 vi.mock("../src/components/CapabilityPanel", () => ({
   CapabilityPanel: () => <section>능력 패널</section>,
 }))

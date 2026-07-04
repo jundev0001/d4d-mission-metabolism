@@ -152,12 +152,12 @@ All spacing derives from a 4px base.
 - **Motion**: no decorative animation.
 
 ### Scenario Builder
-- **Structure**: dedicated custom workspace tab, map name controls, wide flow canvas, draggable event nodes, selected-node editor, import/export/test commands.
-- **Variants**: default scenario, imported scenario, invalid import.
-- **Spacing**: --space-3 between command clusters, --space-2 inside node controls.
-- **States**: selected node uses accent border, dragging uses elevated surface and cursor state, import errors use danger text.
-- **Accessibility**: flow nodes are native buttons with Korean event and target labels; range controls expose numeric labels.
-- **Motion**: only border/background changes on selection and hover.
+- **Structure**: dedicated custom workspace tab, map name controls, wide flow canvas, draggable event nodes, selected-node editor, graph editor, edge list, import/export/test commands.
+- **Variants**: default scenario, imported scenario, invalid import, connection mode, parallel event stage.
+- **Spacing**: --space-3 between command clusters, --space-2 inside node controls, compact edge rows in the side stack.
+- **States**: selected node uses accent border, connection source uses info outline, valid connection targets use dashed borders, dragging uses elevated surface and cursor state, import/graph errors use danger text.
+- **Accessibility**: flow nodes are native buttons with Korean event and target labels; edge removal uses labelled buttons; range controls expose numeric labels.
+- **Motion**: only border/background changes on selection, connection mode, and hover.
 
 ### Workspace Tabs
 - **Structure**: two-button segmented control below mission metrics: 임무 판단 and 커스텀 빌더.
