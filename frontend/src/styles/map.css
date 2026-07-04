@@ -120,7 +120,10 @@
 }
 
 .map-label,
-.asset-label {
+.map-label-detail,
+.map-label-meta,
+.asset-label,
+.action-path-label {
   font-variant-numeric: tabular-nums;
   paint-order: stroke;
   stroke: var(--surface-inset);
@@ -128,7 +131,9 @@
 }
 
 .map-label-layer,
-.map-area-label {
+.map-area-label,
+.mission-activity-layer,
+.action-path-layer {
   pointer-events: none;
 }
 
@@ -137,6 +142,71 @@
   font-size: 3.1px;
   font-weight: 590;
   text-anchor: middle;
+}
+
+.map-label-detail {
+  fill: var(--text-primary);
+  font-size: 2.15px;
+  font-weight: 620;
+  text-anchor: middle;
+}
+
+.map-label-meta {
+  fill: var(--text-muted);
+  font-size: 1.72px;
+  text-anchor: middle;
+}
+
+.mission-activity-path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--status-info) 46%, transparent);
+  stroke-width: 0.44;
+  stroke-linecap: round;
+}
+
+.action-path {
+  fill: none;
+  stroke: var(--accent-primary);
+  stroke-dasharray: 2.2 1.5;
+  stroke-linecap: round;
+  stroke-width: 0.9;
+  animation: action-path-pulse 1.6s ease-in-out infinite;
+}
+
+.action-path-source {
+  fill: var(--surface-base);
+  stroke: var(--accent-primary);
+  stroke-width: 0.55;
+}
+
+.action-path-target {
+  fill: var(--accent-primary);
+  stroke: var(--surface-inset);
+  stroke-width: 0.62;
+}
+
+.action-path-label {
+  fill: var(--text-primary);
+  font-size: 2.15px;
+  font-weight: 650;
+  text-anchor: middle;
+}
+
+@keyframes action-path-pulse {
+  0%,
+  100% {
+    opacity: 0.48;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-path {
+    animation: none;
+  }
 }
 
 .asset {

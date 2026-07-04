@@ -1,0 +1,11 @@
+{
+  "entryCount": 2,
+  "calculationCount": 1,
+  "summaries": [
+    "mission initialized",
+    "mission initialized recalculated mission metrics"
+  ],
+  "payloads": [
+    "{\"trigger\":\"mission_initialized\",\"mcc\":0.0,\"baseline_mcc\":0.0,\"collapse_probability\":0.943,\"autonomy_debt\":85.7,\"ccr_external\":28.0,\"ccr_internal\":1.0,\"pending_recommendations\":0,\"assigned_assets\":0,\"area_mcc\":{\"A\":0.0,\"B\":0.0,\"C\":0.0}}"
+  ]
+}

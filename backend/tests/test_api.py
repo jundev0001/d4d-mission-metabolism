@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from d4d_mission.main import create_app
 from d4d_mission.models import (
     AllocationResponse,
+    CalculationTrace,
     CapabilityGapReport,
     DashboardState,
     MissionCatalogResponse,
@@ -354,6 +355,47 @@ def test_api_exposes_paired_baseline_metrics() -> None:
     assert payload.baseline_metrics.operator_actions == payload.baseline_operator_actions
     assert payload.baseline_metrics.replan_time_seconds > 0
     assert payload.baseline_metrics.collapse_probability >= 0
+
+
+def test_api_tunes_vehicle_status_parameters_and_records_calculation() -> None:
+    client = make_client()
+
+    response = client.post(
+        "/fleet/vehicle/tune",
+        json={
+            "vehicle_id": "UxV-04",
+            "health": {
+                "battery": 0.42,
+                "comm": 0.51,
+                "nav": 0.94,
+                "sensor": 0.82,
+                "health": 0.88,
+                "confidence": 0.74,
+                "degradation_reason": "operator degraded relay test",
+            },
+            "status": "standby",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response_model(response, DashboardState)
+    tuned_vehicle = next(vehicle for vehicle in payload.vehicles if vehicle.id == "UxV-04")
+    assert tuned_vehicle.health.battery == 0.42
+    assert tuned_vehicle.health.comm == 0.51
+    assert tuned_vehicle.status == "standby"
+    assert payload.baseline_metrics.mcc == payload.metrics.mcc
+
+    replay_response = client.get("/replay")
+    assert replay_response.status_code == 200
+    replay_entries = response_model(replay_response, ReplayResponse).entries
+    calculation_entries = [entry for entry in replay_entries if entry.kind == "calculation"]
+    assert len(calculation_entries) > 0
+    assert "vehicle parameter tune" in calculation_entries[-1].summary
+    trace = CalculationTrace.model_validate_json(calculation_entries[-1].payload_json)
+    assert trace.trigger == "vehicle_parameter_tune"
+    assert trace.mcc == payload.metrics.mcc
+    assert trace.baseline_mcc == payload.baseline_metrics.mcc
+    assert set(trace.area_mcc) == set(payload.mission.areas)
 
 
 def test_api_reads_cors_origins_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:

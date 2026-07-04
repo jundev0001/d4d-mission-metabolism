@@ -24,6 +24,20 @@
   min-height: 24px;
 }
 
+.panel-title h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.log-workspace {
+  display: grid;
+  max-width: 1040px;
+  margin: var(--space-4) auto 0;
+}
+
 .area-stack {
   margin-top: var(--space-3);
 }
@@ -169,6 +183,57 @@
   gap: var(--space-2);
   max-height: 300px;
   overflow: auto;
+}
+
+.calculation-detail {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface-inset);
+}
+
+.calculation-trigger {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  min-width: 0;
+}
+
+.calculation-trigger strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.calculation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: var(--space-2);
+}
+
+.calculation-grid span,
+.area-calculation-row span {
+  min-width: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--surface-base);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.area-calculation-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .blackbox-row {

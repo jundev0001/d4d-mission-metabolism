@@ -1,0 +1,15 @@
+{
+  "initialAllGcs": true,
+  "finalMcc": 0.874,
+  "finalCollapse": 0.417,
+  "finalDebt": 25.1,
+  "replayEntries": 32,
+  "calculationEntries": 13,
+  "screenshots": [
+    "01-desktop-initial-gcs.png",
+    "02-desktop-allocation-paths.png",
+    "03-desktop-event-approved-paths.png",
+    "04-desktop-log-and-tune.png",
+    "05-mobile-mission-view.png"
+  ]
+}

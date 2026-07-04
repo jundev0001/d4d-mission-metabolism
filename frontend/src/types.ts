@@ -207,6 +207,19 @@ const BlackBoxEntrySchema = z.object({
   payload_json: z.string(),
 })
 
+export const CalculationTraceSchema = z.object({
+  trigger: z.string(),
+  mcc: Percent,
+  baseline_mcc: Percent,
+  collapse_probability: Percent,
+  autonomy_debt: z.number().min(0).max(100),
+  ccr_external: z.number().min(0),
+  ccr_internal: z.number().min(0),
+  pending_recommendations: z.number().int().min(0),
+  assigned_assets: z.number().int().min(0),
+  area_mcc: z.record(z.string(), Percent),
+})
+
 export const DashboardStateSchema = z.object({
   mission: MissionSchema,
   vehicles: z.array(VehicleSchema),
@@ -236,12 +249,15 @@ export type MicroActionType = z.infer<typeof MicroActionTypeSchema>
 export type Point = z.infer<typeof PointSchema>
 export type CapabilityDemand = z.infer<typeof CapabilityDemandSchema>
 export type MissionConstraints = z.infer<typeof MissionConstraintsSchema>
+export type HealthState = z.infer<typeof HealthStateSchema>
 export type Vehicle = z.infer<typeof VehicleSchema>
+export type VehicleStatus = Vehicle["status"]
 export type MetricSnapshot = z.infer<typeof MetricSnapshotSchema>
 export type RecommendationCard = z.infer<typeof RecommendationCardSchema>
 export type BlackBoxEntry = z.infer<typeof BlackBoxEntrySchema>
 export type DashboardState = z.infer<typeof DashboardStateSchema>
 export type ReplayResponse = z.infer<typeof ReplayResponseSchema>
+export type CalculationTrace = z.infer<typeof CalculationTraceSchema>
 
 export type EventPayload = {
   readonly event_type: EventType
@@ -254,4 +270,10 @@ export type DecisionPayload = {
   readonly action: DecisionAction
   readonly manual_action?: MicroActionType
   readonly vehicle_id?: string
+}
+
+export type VehicleTunePayload = {
+  readonly vehicle_id: string
+  readonly health: HealthState
+  readonly status: VehicleStatus
 }

@@ -1,0 +1,7 @@
+HTTP/1.1 200 OK
+date: Sat, 04 Jul 2026 18:21:06 GMT
+server: uvicorn
+content-length: 197
+content-type: application/json
+
+{"mcc":0.0,"strain":1.0,"collapse_probability":0.943,"autonomy_debt":85.7,"operator_actions":1,"alert_backlog":0,"approval_count":0,"replan_time_seconds":0.0,"ccr_external":28.0,"ccr_internal":1.0}

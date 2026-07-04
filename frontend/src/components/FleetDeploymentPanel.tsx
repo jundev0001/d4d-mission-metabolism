@@ -20,6 +20,7 @@ export function FleetDeploymentPanel() {
   const deployFleet = useMissionStore((state) => state.deployFleet)
   const isRunningDemo = useMissionStore((state) => state.isRunningDemo)
   const profiles = useMissionStore((state) => state.vehicleTypeProfiles)
+  const tuneVehicle = useMissionStore((state) => state.tuneVehicle)
   const baselineDraft = useMemo(
     () => deploymentDraftFrom(profiles, dashboard?.vehicles ?? []),
     [dashboard?.vehicles, profiles],
@@ -59,8 +60,10 @@ export function FleetDeploymentPanel() {
       </div>
       <FleetAssetList
         canRemove={canRemove}
+        isRunningDemo={isRunningDemo}
         minCount={MIN_DEPLOYED_ASSETS}
         onRemove={removeVehicle}
+        onTuneVehicle={(payload) => void tuneVehicle(payload)}
         totalCount={totalCount}
         vehicles={dashboard?.vehicles ?? []}
       />

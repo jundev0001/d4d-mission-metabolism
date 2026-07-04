@@ -7,6 +7,7 @@ import {
   injectEvent as postEvent,
   deployFleet as postFleetDeployment,
   configureMission as postMissionConfiguration,
+  tuneVehicle as postVehicleTune,
   resetMission,
   sendDecision,
   websocketUrl,
@@ -16,7 +17,13 @@ import type { CustomScenarioDocument } from "./customScenario"
 import { customScenarioEventBatches } from "./customScenarioGraph"
 import { DEFAULT_CUSTOM_SCENARIO } from "./defaultCustomScenario"
 import { connectLiveDashboard } from "./liveDashboard"
-import type { BlackBoxEntry, DashboardState, DecisionPayload, EventPayload } from "./types"
+import type {
+  BlackBoxEntry,
+  DashboardState,
+  DecisionPayload,
+  EventPayload,
+  VehicleTunePayload,
+} from "./types"
 import type { FleetDeploymentPayload, VehicleTypeProfile } from "./vehicleDeployment"
 
 const SCRIPTED_EVENTS: readonly EventPayload[] = [
@@ -39,6 +46,7 @@ type MissionStore = {
   readonly acceptSnapshot: (dashboard: DashboardState) => void
   readonly reset: () => Promise<void>
   readonly deployFleet: (items: FleetDeploymentPayload) => Promise<void>
+  readonly tuneVehicle: (payload: VehicleTunePayload) => Promise<void>
   readonly configureCustomMission: () => Promise<void>
   readonly allocateMission: () => Promise<void>
   readonly injectEvent: (event: EventPayload) => Promise<void>
@@ -98,6 +106,16 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
       const dashboard = await postFleetDeployment(items)
       const replay = await fetchReplay()
       set({ dashboard, replay: replay.entries, selectedReplayIndex: 0, lastError: null })
+    } catch (error) {
+      set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
+    }
+  },
+
+  tuneVehicle: async (payload) => {
+    try {
+      const dashboard = await postVehicleTune(payload)
+      const replay = await fetchReplay()
+      set({ dashboard, replay: replay.entries, lastError: null })
     } catch (error) {
       set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
     }

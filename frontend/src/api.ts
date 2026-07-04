@@ -10,6 +10,7 @@ import {
   type Point,
   type ReplayResponse,
   ReplayResponseSchema,
+  type VehicleTunePayload,
 } from "./types"
 import {
   type FleetDeploymentPayload,
@@ -63,6 +64,11 @@ export async function fetchVehicleTypes(): Promise<VehicleTypeCatalogResponse> {
 export async function deployFleet(items: FleetDeploymentPayload): Promise<DashboardState> {
   const payload = await client.post("fleet/deploy", { json: { items } }).json()
   return DashboardStateSchema.parse(payload)
+}
+
+export async function tuneVehicle(payload: VehicleTunePayload): Promise<DashboardState> {
+  const response = await client.post("fleet/vehicle/tune", { json: payload }).json()
+  return DashboardStateSchema.parse(response)
 }
 
 export async function configureMission(payload: MissionConfigurePayload): Promise<DashboardState> {

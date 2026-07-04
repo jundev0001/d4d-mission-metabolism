@@ -1,5 +1,5 @@
 import type { CustomMapArea } from "../customScenario"
-import { formatPercent, targetLabel } from "../format"
+import { formatPercent, missionTypeLabel, targetLabel } from "../format"
 import { countRelayAssignments, minimumCoverageForArea } from "../mapCoverage"
 import type { DashboardState } from "../types"
 
@@ -21,7 +21,12 @@ export function MapReadout({ dashboard, mapAreas }: MapReadoutProps) {
       <legend className="sr-only">COP 요약</legend>
       {mapAreas.map((area) => (
         <span className="area-coverage-chip" key={area.id}>
-          {area.label} 최저 {formatPercent(minimumCoverageForArea(dashboard, area.id))}
+          {area.label}{" "}
+          {missionTypeLabel(
+            dashboard.mission.area_mission_types[area.id] ?? dashboard.mission.mission_type,
+          )}{" "}
+          · P {formatPercent(dashboard.mission.area_priorities[area.id] ?? 0)} · 최저{" "}
+          {formatPercent(minimumCoverageForArea(dashboard, area.id))}
         </span>
       ))}
       <span>EW 최고 {formatPercent(strongestThreat)}</span>

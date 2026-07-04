@@ -21,6 +21,7 @@ from d4d_mission.models import (
     DecisionRequest,
     EventRequest,
     FleetStateResponse,
+    HealthState,
     MetricSnapshot,
     Mission,
     MissionCatalogResponse,
@@ -34,6 +35,7 @@ from d4d_mission.models import (
 from d4d_mission.state import MissionRuntime, UnknownTargetError, runtime_error_to_status
 from d4d_mission.types import (
     MissionType,
+    VehicleStatus,
     VehicleType,
 )
 
@@ -56,6 +58,12 @@ class DeploymentItemRequest(StrictModel):
 
 class FleetDeploymentRequest(StrictModel):
     items: tuple[DeploymentItemRequest, ...] = Field(min_length=1, max_length=8)
+
+
+class VehicleTuneRequest(StrictModel):
+    vehicle_id: str = Field(min_length=1, max_length=40)
+    health: HealthState
+    status: VehicleStatus
 
 
 class MissionAreaConfigureRequest(StrictModel):
@@ -126,6 +134,17 @@ def create_app() -> FastAPI:
         except DeploymentError as error:
             _raise_http(error)
 
+    @app.post("/fleet/vehicle/tune", response_model=DashboardState)
+    async def fleet_vehicle_tune(request: VehicleTuneRequest) -> DashboardState:
+        try:
+            return runtime.tune_vehicle(
+                vehicle_id=request.vehicle_id,
+                health=request.health,
+                status=request.status,
+            )
+        except UnknownTargetError as error:
+            _raise_http(error)
+
     @app.post("/capability/compute", response_model=CapabilityReport)
     async def capability_compute() -> CapabilityReport:
         return runtime.capability_report()
@@ -178,7 +197,7 @@ def create_app() -> FastAPI:
             while True:
                 await websocket.send_text(runtime.snapshot.model_dump_json())
                 await anyio.sleep(1)
-        except WebSocketDisconnect:
+        except (OSError, RuntimeError, WebSocketDisconnect):
             return
 
     return app

@@ -1,0 +1,2 @@
+locator('button',{hasText:'계산 로그'}).count=37
+getByRole(button,{name:'계산 로그'}).count=1

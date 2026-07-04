@@ -191,6 +191,19 @@ class MetricSnapshot(StrictModel):
     ccr_internal: float = Field(ge=0)
 
 
+class CalculationTrace(StrictModel):
+    trigger: str
+    mcc: float = Field(ge=0, le=1)
+    baseline_mcc: float = Field(ge=0, le=1)
+    collapse_probability: float = Field(ge=0, le=1)
+    autonomy_debt: float = Field(ge=0, le=100)
+    ccr_external: float = Field(ge=0)
+    ccr_internal: float = Field(ge=0)
+    pending_recommendations: int = Field(ge=0)
+    assigned_assets: int = Field(ge=0)
+    area_mcc: dict[AreaId, float]
+
+
 class KpiDelta(StrictModel):
     mcc_delta: float
     collapse_probability_delta: float

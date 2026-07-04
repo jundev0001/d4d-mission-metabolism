@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -25,47 +24,26 @@ from d4d_mission.models import (
     DecisionRequest,
     EventRequest,
     FleetStateResponse,
+    HealthState,
     MetricSnapshot,
     Mission,
     RecommendationCard,
     ReplayResponse,
 )
-from d4d_mission.scenario import apply_event_to_snapshot, create_initial_snapshot, refresh_snapshot
-from d4d_mission.types import EventType
-
-AREA_TARGET_EVENTS = frozenset(
-    {
-        EventType.COMM_JAM,
-        EventType.NO_GO,
-        EventType.PRIORITY_SHIFT,
-        EventType.DATA_STALE,
-        EventType.TARGET_DETECTED,
-        EventType.WEATHER_DEGRADED,
-        EventType.ASSET_ADDED,
-        EventType.RESERVE_DEPLETED,
-    }
+from d4d_mission.runtime_support import (
+    AREA_TARGET_EVENTS,
+    VEHICLE_TARGET_EVENTS,
+    UnknownTargetError,
+    record_calculation,
+    refresh_allocation_snapshot,
+    tune_vehicle_snapshot,
 )
-VEHICLE_TARGET_EVENTS = frozenset(
-    {
-        EventType.BATTERY_DROP,
-        EventType.COMM_DEGRADED,
-        EventType.GPS_DROP,
-        EventType.SENSOR_FAIL,
-        EventType.VEHICLE_LOST,
-        EventType.MOBILITY_BLOCKED,
-        EventType.COLLISION_RISK,
-        EventType.SENSOR_CONFIDENCE_DROP,
-    }
+from d4d_mission.scenario import (
+    apply_event_to_snapshot,
+    create_initial_snapshot,
+    refresh_snapshot,
 )
-
-
-@dataclass(frozen=True, slots=True)
-class UnknownTargetError(Exception):
-    target: str
-
-    @override
-    def __str__(self) -> str:
-        return f"unknown target {self.target}"
+from d4d_mission.types import EventType, VehicleId, VehicleStatus
 
 
 class MissionRuntime:
@@ -78,6 +56,7 @@ class MissionRuntime:
             summary="mission initialized",
             model=self._snapshot,
         )
+        record_calculation(self._blackbox, self._snapshot, "mission_initialized")
 
     @property
     def snapshot(self) -> DashboardState:
@@ -91,6 +70,7 @@ class MissionRuntime:
             summary=f"mission reset with seed {seed}",
             model=self._snapshot,
         )
+        record_calculation(self._blackbox, self._snapshot, "mission_reset")
         return self._snapshot
 
     def deploy_fleet(self, deployment: tuple[DeploymentCount, ...]) -> DashboardState:
@@ -101,6 +81,7 @@ class MissionRuntime:
             summary="fleet deployment updated",
             model=self._snapshot,
         )
+        record_calculation(self._blackbox, self._snapshot, "fleet_deployment")
         return self._snapshot
 
     def configure_mission(self, mission: Mission) -> DashboardState:
@@ -130,6 +111,7 @@ class MissionRuntime:
             summary="mission configured from custom areas",
             model=mission,
         )
+        record_calculation(self._blackbox, self._snapshot, "mission_configure")
         return self._snapshot
 
     def fleet_state(self) -> FleetStateResponse:
@@ -154,23 +136,43 @@ class MissionRuntime:
             assignments=plan.assignments,
             mission=self._snapshot.mission,
         )
-        updates: dict[str, object] = {"vehicles": vehicles, "assignments": plan.assignments}
-        if len(self._snapshot.events) == 0:
-            updates.update(
-                {
-                    "baseline_mission": self._snapshot.mission,
-                    "baseline_vehicles": vehicles,
-                    "baseline_assignments": plan.assignments,
-                },
-            )
-        self._snapshot = refresh_snapshot(snapshot=self._snapshot.model_copy(update=updates))
+        self._snapshot = refresh_allocation_snapshot(
+            snapshot=self._snapshot,
+            vehicles=vehicles,
+            assignments=plan.assignments,
+        )
         self._blackbox.record_model(
             scenario_time=self._snapshot.scenario_time,
             kind="decision",
             summary="approved optimized allocation from GCS",
             model=plan,
         )
+        record_calculation(self._blackbox, self._snapshot, "optimized_allocation_approval")
         return plan
+
+    def tune_vehicle(
+        self,
+        vehicle_id: VehicleId,
+        health: HealthState,
+        status: VehicleStatus,
+    ) -> DashboardState:
+        vehicle_ids = {vehicle.id for vehicle in self._snapshot.vehicles}
+        if vehicle_id not in vehicle_ids:
+            raise UnknownTargetError(target=vehicle_id)
+        self._snapshot = tune_vehicle_snapshot(
+            snapshot=self._snapshot,
+            vehicle_id=vehicle_id,
+            health=health,
+            status=status,
+        )
+        self._blackbox.record_model(
+            scenario_time=self._snapshot.scenario_time,
+            kind="event",
+            summary=f"vehicle parameters tuned for {vehicle_id}",
+            model=self._snapshot,
+        )
+        record_calculation(self._blackbox, self._snapshot, "vehicle_parameter_tune")
+        return self._snapshot
 
     def inject_event(self, event: EventRequest) -> DashboardState:
         self._ensure_target_exists(event=event)
@@ -192,6 +194,7 @@ class MissionRuntime:
             summary=card.title,
             model=card,
         )
+        record_calculation(self._blackbox, self._snapshot, f"event_{event.event_type.value}")
         return self._snapshot
 
     def respond(self, event: EventRequest) -> RecommendationCard:
@@ -222,6 +225,7 @@ class MissionRuntime:
             summary="metrics recomputed after human gate",
             model=self._snapshot.metrics,
         )
+        record_calculation(self._blackbox, self._snapshot, f"decision_{request.action.value}")
         return self._snapshot
 
     def metrics(self) -> MetricSnapshot:

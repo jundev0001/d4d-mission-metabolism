@@ -1,4 +1,4 @@
-import type { CapabilityName, EventType, MicroActionType } from "./types"
+import type { CapabilityName, EventType, MicroActionType, MissionType } from "./types"
 
 const CAPABILITY_LABELS: Record<CapabilityName, string> = {
   visual_recon: "영상 정찰",
@@ -26,6 +26,16 @@ const EVENT_LABELS: Record<string, string> = {
   sensor_confidence_drop: "센서 신뢰도 저하",
   asset_added: "전력 추가",
   reserve_depleted: "예비 전력 고갈",
+}
+
+const MISSION_TYPE_LABELS: Record<MissionType, string> = {
+  area_recon: "구역 정찰",
+  route_recon: "경로 정찰",
+  persistent_watch: "지속 감시",
+  perimeter_security: "외곽 경계",
+  comm_relay: "중계 임무",
+  gps_denied_scout: "GPS 거부 정찰",
+  damage_assessment: "피해 평가",
 }
 
 const MICRO_ACTION_LABELS: Record<MicroActionType, string> = {
@@ -97,6 +107,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const BLACKBOX_KIND_LABELS: Record<string, string> = {
+  calculation: "계산",
   decision: "판단",
   event: "이벤트",
   mission: "임무",
@@ -129,6 +140,10 @@ export function capabilityLabel(capability: CapabilityName): string {
 
 export function eventLabel(value: EventType): string {
   return EVENT_LABELS[value] ?? fallbackLabel(value)
+}
+
+export function missionTypeLabel(value: MissionType): string {
+  return MISSION_TYPE_LABELS[value]
 }
 
 export function microActionLabel(value: MicroActionType): string {

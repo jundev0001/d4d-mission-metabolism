@@ -107,6 +107,36 @@ describe("map view", () => {
     expect(assetIconHref("UxV-06")).toContain("scout_rover")
   })
 
+  it("Given area missions and an approved recommendation When the COP renders Then mission labels and action paths explain the decision", () => {
+    const dashboard = makeMapDashboard()
+    useMissionStore.setState({
+      dashboard: {
+        ...dashboard,
+        recommendations: [
+          {
+            ...dashboard.recommendations[0],
+            actions: [
+              {
+                action: "launch_reserve",
+                area: "B",
+                rationale: "replace relay capacity from reserve",
+                vehicle_id: "UxV-06",
+              },
+            ],
+            status: "approved",
+          },
+        ],
+      },
+    })
+
+    render(<MapView />)
+
+    expect(screen.getByText("Area B")).toBeInTheDocument()
+    expect(screen.getByText("중계 임무")).toBeInTheDocument()
+    expect(screen.getByTestId("action-path-UxV-06-B")).toBeInTheDocument()
+    expect(screen.getByText("UxV-06 → Area B")).toBeInTheDocument()
+  })
+
   it("Given deployed UxVs When an asset is removed from the COP menu Then fleet deployment is updated", async () => {
     useMissionStore.setState({ dashboard: makeMapDashboard() })
     render(<MapView />)

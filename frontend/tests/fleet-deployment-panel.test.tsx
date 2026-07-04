@@ -10,12 +10,14 @@ import { makeDashboardState } from "./fixtures"
 const apiMocks = vi.hoisted(() => ({
   deployFleet: vi.fn(),
   fetchReplay: vi.fn(),
+  tuneVehicle: vi.fn(),
 }))
 
 vi.mock("../src/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/api")>()),
   deployFleet: apiMocks.deployFleet,
   fetchReplay: apiMocks.fetchReplay,
+  tuneVehicle: apiMocks.tuneVehicle,
 }))
 
 describe("fleet deployment panel", () => {
@@ -24,6 +26,7 @@ describe("fleet deployment panel", () => {
     apiMocks.fetchReplay.mockResolvedValue({ entries: [] })
     const dashboard = makeDeploymentDashboard()
     apiMocks.deployFleet.mockResolvedValue(dashboard)
+    apiMocks.tuneVehicle.mockResolvedValue(dashboard)
     useMissionStore.setState({
       dashboard,
       isRunningDemo: false,
@@ -60,6 +63,22 @@ describe("fleet deployment panel", () => {
     expect(deployedAssetIcons).toHaveLength(6)
     expect(deploymentIcons[0]).toHaveAttribute("src", mapAssetIconHref("fixedwing_survey_uav"))
     expect(deployedAssetIcons[3]).toHaveAttribute("src", mapAssetIconHref("relay_uav"))
+  })
+
+  it("Given deployed UxVs When tuning a vehicle status parameter Then the backend receives the updated vehicle state", async () => {
+    render(<FleetDeploymentPanel />)
+
+    fireEvent.change(screen.getByLabelText("UxV-04 배터리"), { target: { value: "42" } })
+    fireEvent.change(screen.getByLabelText("UxV-04 상태"), { target: { value: "standby" } })
+    fireEvent.click(screen.getByRole("button", { name: "UxV-04 파라미터 적용" }))
+
+    await waitFor(() => {
+      expect(apiMocks.tuneVehicle).toHaveBeenCalledWith({
+        health: expect.objectContaining({ battery: 0.42 }),
+        status: "standby",
+        vehicle_id: "UxV-04",
+      })
+    })
   })
 })
 

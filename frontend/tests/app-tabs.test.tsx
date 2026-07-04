@@ -75,4 +75,14 @@ describe("workspace tabs", () => {
     expect(screen.getByText("커스텀 빌더 패널")).toBeInTheDocument()
     expect(screen.queryByText("이벤트 컨트롤")).not.toBeInTheDocument()
   })
+
+  it("Given the dashboard When selecting the log tab Then calculation logs replace the mission workspace", () => {
+    render(<App />)
+
+    fireEvent.click(screen.getByRole("button", { name: "계산 로그" }))
+
+    expect(screen.getByRole("region", { name: "계산 로그 작업면" })).toBeInTheDocument()
+    expect(screen.getByText("블랙박스 패널")).toBeInTheDocument()
+    expect(screen.queryByText("지도 패널")).not.toBeInTheDocument()
+  })
 })

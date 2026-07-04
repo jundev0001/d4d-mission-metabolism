@@ -48,7 +48,7 @@ export function ScenarioBuilderCommandBar({
         onClick={() => void onAllocate()}
       >
         <Route size={15} />
-        Allocate
+        편성 승인
       </button>
       <button
         className="button primary"

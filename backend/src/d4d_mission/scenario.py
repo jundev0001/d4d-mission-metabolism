@@ -4,6 +4,7 @@ from d4d_mission.capability import compute_capability_report
 from d4d_mission.metabolism import evaluate_metrics
 from d4d_mission.models import (
     Assignment,
+    CalculationTrace,
     CapabilityReport,
     DashboardState,
     EventRecord,
@@ -101,6 +102,26 @@ def refresh_snapshot(snapshot: DashboardState) -> DashboardState:
     updated_with_metrics = updated.model_copy(update={"metrics": metrics})
     baseline_metrics = _paired_baseline_metrics(snapshot=updated_with_metrics)
     return updated_with_metrics.model_copy(update={"baseline_metrics": baseline_metrics})
+
+
+def calculation_trace(snapshot: DashboardState, trigger: str) -> CalculationTrace:
+    return CalculationTrace(
+        trigger=trigger,
+        mcc=snapshot.metrics.mcc,
+        baseline_mcc=snapshot.baseline_metrics.mcc,
+        collapse_probability=snapshot.metrics.collapse_probability,
+        autonomy_debt=snapshot.metrics.autonomy_debt,
+        ccr_external=snapshot.metrics.ccr_external,
+        ccr_internal=snapshot.metrics.ccr_internal,
+        pending_recommendations=sum(
+            1 for card in snapshot.recommendations if card.status == RecommendationStatus.PENDING
+        ),
+        assigned_assets=len(snapshot.assignments),
+        area_mcc={
+            area: round(sum(report.coverage.values()) / max(1, len(report.coverage)), 3)
+            for area, report in snapshot.capability_report.area_reports.items()
+        },
+    )
 
 
 def _placeholder_metrics(report: CapabilityReport) -> MetricSnapshot:

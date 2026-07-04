@@ -12,7 +12,7 @@ import { ScenarioBuilderPanel } from "./components/ScenarioBuilderPanel"
 import { useMissionStore } from "./store"
 import "./App.css"
 
-type WorkspaceView = "mission" | "custom"
+type WorkspaceView = "mission" | "log" | "custom"
 
 const WORKSPACE_TABS: readonly {
   readonly view: WorkspaceView
@@ -20,6 +20,7 @@ const WORKSPACE_TABS: readonly {
   readonly caption: string
 }[] = [
   { view: "mission", label: "임무 판단", caption: "실시간 COP" },
+  { view: "log", label: "계산 로그", caption: "산출 근거" },
   { view: "custom", label: "커스텀 빌더", caption: "맵/시나리오 제작" },
 ] as const
 
@@ -52,7 +53,9 @@ export function App() {
       {error ? <div className="error-banner">{error}</div> : null}
       <MetricStrip />
       <WorkspaceTabs activeView={workspaceView} onViewChange={setWorkspaceView} />
-      {workspaceView === "mission" ? <MissionWorkspace /> : <CustomWorkspace />}
+      {workspaceView === "mission" ? <MissionWorkspace /> : null}
+      {workspaceView === "log" ? <LogWorkspace /> : null}
+      {workspaceView === "custom" ? <CustomWorkspace /> : null}
     </main>
   )
 }
@@ -107,6 +110,14 @@ function CustomWorkspace() {
   return (
     <section className="custom-workspace" aria-label="커스텀 시나리오 작업면">
       <ScenarioBuilderPanel />
+    </section>
+  )
+}
+
+function LogWorkspace() {
+  return (
+    <section className="log-workspace" aria-label="계산 로그 작업면">
+      <BlackBoxPanel />
     </section>
   )
 }

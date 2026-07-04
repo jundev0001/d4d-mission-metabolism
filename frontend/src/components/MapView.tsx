@@ -17,6 +17,7 @@ import { MapAreaLabel, MapAreaSector } from "./MapAreaSector"
 import { MapAssetContextMenu } from "./MapAssetContextMenu"
 import { type AssetMenuRequest, MapAssetGlyph, MapAssetInfoCard } from "./MapAssetGlyph"
 import { MapLegend } from "./MapLegend"
+import { MapPathOverlays } from "./MapPathOverlays"
 import { MapReadout } from "./MapReadout"
 
 const GRID_LINES = [12, 24, 36, 48, 60, 72, 84] as const
@@ -162,9 +163,24 @@ export function MapView() {
           <path className="route-line route-secondary" d="M26 58 L55 38 L73 25" />
           <circle className="relay-node" cx="55" cy="38" r="2.2" />
 
+          <MapPathOverlays
+            dashboard={dashboard}
+            mapAreas={mapAreas}
+            positions={assetDisplayPositions}
+          />
+
           <g className="map-label-layer">
             {mapAreas.map((area) => (
-              <MapAreaLabel area={area} key={`label-${area.id}`} overlayScale={overlayScale} />
+              <MapAreaLabel
+                area={area}
+                key={`label-${area.id}`}
+                missionType={
+                  dashboard.mission.area_mission_types[area.id] ?? dashboard.mission.mission_type
+                }
+                overlayScale={overlayScale}
+                priority={dashboard.mission.area_priorities[area.id] ?? 0}
+                threat={dashboard.mission.area_threats[area.id] ?? 0}
+              />
             ))}
           </g>
           {dashboard.vehicles.map((vehicle) => (

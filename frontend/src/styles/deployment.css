@@ -111,7 +111,7 @@
 }
 
 .deployed-asset-list {
-  max-height: 172px;
+  max-height: 360px;
   overflow: auto;
   padding-right: 2px;
 }
@@ -130,4 +130,59 @@
 .deployed-asset-remove {
   min-height: 30px;
   padding: 0;
+}
+
+.vehicle-param-controls {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.vehicle-param-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 34px;
+  gap: var(--space-2);
+  align-items: center;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.vehicle-param-field span,
+.vehicle-param-field b {
+  white-space: nowrap;
+}
+
+.vehicle-param-field b {
+  color: var(--text-secondary);
+  font-weight: 590;
+  text-align: right;
+}
+
+.vehicle-param-field input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--accent-primary);
+}
+
+.vehicle-param-field select {
+  grid-column: 2 / 4;
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.vehicle-param-apply {
+  grid-column: 1 / -1;
+  justify-content: center;
+  min-height: 30px;
 }

@@ -1,4 +1,6 @@
 import { areaPath, type CustomMapArea } from "../customScenario"
+import { formatPercent, missionTypeLabel } from "../format"
+import type { MissionType } from "../types"
 
 type MapAreaSectorProps = {
   readonly area: CustomMapArea
@@ -9,7 +11,10 @@ type MapAreaSectorProps = {
 
 type MapAreaLabelProps = {
   readonly area: CustomMapArea
+  readonly missionType: MissionType
   readonly overlayScale: number
+  readonly priority: number
+  readonly threat: number
 }
 
 export function MapAreaSector(props: MapAreaSectorProps) {
@@ -36,7 +41,13 @@ export function MapAreaSector(props: MapAreaSectorProps) {
   )
 }
 
-export function MapAreaLabel({ area, overlayScale }: MapAreaLabelProps) {
+export function MapAreaLabel({
+  area,
+  missionType,
+  overlayScale,
+  priority,
+  threat,
+}: MapAreaLabelProps) {
   return (
     <g
       className="map-area-label"
@@ -44,6 +55,12 @@ export function MapAreaLabel({ area, overlayScale }: MapAreaLabelProps) {
     >
       <text className="map-label" x="0" y="0">
         {area.label}
+      </text>
+      <text className="map-label-detail" x="0" y="3.9">
+        {missionTypeLabel(missionType)}
+      </text>
+      <text className="map-label-meta" x="0" y="7.1">
+        P {formatPercent(priority)} / EW {formatPercent(threat)}
       </text>
     </g>
   )
