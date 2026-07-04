@@ -89,6 +89,7 @@ describe("mission store", () => {
       selectedReplayIndex: 0,
       lastError: null,
       customScenario: DEFAULT_CUSTOM_SCENARIO,
+      customScenarioRun: null,
     })
   })
 
@@ -166,6 +167,7 @@ describe("mission store", () => {
     apiMocks.injectEvent.mockResolvedValue(allocatedDashboard)
 
     const run = useMissionStore.getState().runScriptedDemo()
+    await vi.advanceTimersByTimeAsync(0)
     await vi.advanceTimersByTimeAsync(2200)
     await run
 
@@ -198,6 +200,7 @@ describe("mission store", () => {
     useMissionStore.setState({ customScenario: originalScenario })
 
     const run = useMissionStore.getState().runCustomScenario()
+    await vi.advanceTimersByTimeAsync(0)
     await vi.advanceTimersByTimeAsync(2200)
     await run
 

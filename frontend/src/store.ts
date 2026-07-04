@@ -14,8 +14,14 @@ import {
 } from "./api"
 import { missionPayloadFromCustomScenario } from "./customMissionPayload"
 import type { CustomScenarioDocument } from "./customScenario"
-import { customScenarioEventBatches } from "./customScenarioGraph"
 import { DEFAULT_CUSTOM_SCENARIO } from "./defaultCustomScenario"
+import { hasPendingRecommendations } from "./demoFlowRunner"
+import {
+  advanceCustomScenarioAction,
+  type CustomScenarioRun,
+  runCustomScenarioAction,
+  runScriptedDemoAction,
+} from "./demoStoreActions"
 import { connectLiveDashboard } from "./liveDashboard"
 import type {
   BlackBoxEntry,
@@ -26,13 +32,6 @@ import type {
 } from "./types"
 import type { FleetDeploymentPayload, VehicleTypeProfile } from "./vehicleDeployment"
 
-const SCRIPTED_EVENTS: readonly EventPayload[] = [
-  { event_type: "comm_jam", target: "B", severity: 0.82 },
-  { event_type: "battery_drop", target: "UxV-02", severity: 0.9 },
-  { event_type: "comm_degraded", target: "UxV-03", severity: 0.74 },
-  { event_type: "no_go", target: "B", severity: 0.68 },
-] as const
-
 type MissionStore = {
   readonly dashboard: DashboardState | null
   readonly replay: readonly BlackBoxEntry[]
@@ -42,6 +41,7 @@ type MissionStore = {
   readonly selectedReplayIndex: number
   readonly lastError: string | null
   readonly customScenario: CustomScenarioDocument
+  readonly customScenarioRun: CustomScenarioRun | null
   readonly hydrate: () => Promise<void>
   readonly acceptSnapshot: (dashboard: DashboardState) => void
   readonly reset: () => Promise<void>
@@ -53,10 +53,13 @@ type MissionStore = {
   readonly decide: (decision: DecisionPayload) => Promise<void>
   readonly runScriptedDemo: () => Promise<void>
   readonly runCustomScenario: () => Promise<void>
+  readonly advanceCustomScenario: () => Promise<void>
   readonly setCustomScenario: (customScenario: CustomScenarioDocument) => void
   readonly selectReplayIndex: (index: number) => void
   readonly connectLive: () => () => void
 }
+
+const UNKNOWN_ERROR = "Unknown dashboard error"
 
 export const useMissionStore = create<MissionStore>()((set, get) => ({
   dashboard: null,
@@ -67,6 +70,7 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
   selectedReplayIndex: 0,
   lastError: null,
   customScenario: DEFAULT_CUSTOM_SCENARIO,
+  customScenarioRun: null,
 
   hydrate: async () => {
     try {
@@ -95,7 +99,14 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
     try {
       const dashboard = await resetMission(42)
       const replay = await fetchReplay()
-      set({ dashboard, replay: replay.entries, selectedReplayIndex: 0, lastError: null })
+      set({
+        dashboard,
+        replay: replay.entries,
+        selectedReplayIndex: 0,
+        lastError: null,
+        customScenarioRun: null,
+        isRunningDemo: false,
+      })
     } catch (error) {
       set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
     }
@@ -162,50 +173,19 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
       const dashboard = await sendDecision(decision)
       const replay = await fetchReplay()
       set({ dashboard, replay: replay.entries, lastError: null })
+      if (!hasPendingRecommendations(dashboard)) {
+        await get().advanceCustomScenario()
+      }
     } catch (error) {
       set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
     }
   },
 
-  runScriptedDemo: async () => {
-    if (get().isRunningDemo) {
-      return
-    }
-    set({ isRunningDemo: true, lastError: null })
-    try {
-      await get().reset()
-      await get().allocateMission()
-      await SCRIPTED_EVENTS.reduce(
-        (sequence, event) => sequence.then(() => injectDemoEvent(event, get)),
-        Promise.resolve(),
-      )
-    } catch (error) {
-      set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
-    } finally {
-      set({ isRunningDemo: false })
-    }
-  },
+  runScriptedDemo: runScriptedDemoAction(get, set, UNKNOWN_ERROR),
 
-  runCustomScenario: async () => {
-    if (get().isRunningDemo) {
-      return
-    }
-    const customScenario = get().customScenario
-    set({ isRunningDemo: true, lastError: null })
-    try {
-      await get().reset()
-      await get().configureCustomMission(customScenario)
-      await get().allocateMission()
-      await customScenarioEventBatches(customScenario).reduce(
-        (sequence, events) => sequence.then(() => injectDemoEventBatch(events, get)),
-        Promise.resolve(),
-      )
-    } catch (error) {
-      set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
-    } finally {
-      set({ isRunningDemo: false })
-    }
-  },
+  runCustomScenario: runCustomScenarioAction(get, set, UNKNOWN_ERROR),
+
+  advanceCustomScenario: advanceCustomScenarioAction(get, set, UNKNOWN_ERROR),
 
   setCustomScenario: (customScenario) => {
     set({ customScenario, lastError: null })
@@ -229,25 +209,3 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
     })
   },
 }))
-
-const UNKNOWN_ERROR = "Unknown dashboard error"
-
-function delay(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, milliseconds)
-  })
-}
-
-function injectDemoEvent(event: EventPayload, getStore: () => MissionStore): Promise<void> {
-  return delay(500).then(() => getStore().injectEvent(event))
-}
-
-async function injectDemoEventBatch(
-  events: readonly EventPayload[],
-  getStore: () => MissionStore,
-): Promise<void> {
-  await delay(500)
-  for (const event of events) {
-    await getStore().injectEvent(event)
-  }
-}
