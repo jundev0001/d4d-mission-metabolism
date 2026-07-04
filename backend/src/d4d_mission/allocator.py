@@ -36,7 +36,8 @@ RESERVE_PRESERVATION_WEIGHT: Final = 0.08
 SAME_AREA_BONUS: Final = 0.06
 ROLE_FIT_BONUS: Final = 0.08
 GCS_AREA: Final[str] = "GCS"
-GCS_POINT: Final[Point] = Point(x=50, y=80)
+GCS_POINT: Final[Point] = Point(x=94.7, y=58)
+GCS_PLANNING_POINT: Final[Point] = Point(x=50, y=80)
 AREA_STAGING_POINTS: Final[dict[str, Point]] = {
     "A": Point(x=25, y=30),
     "B": Point(x=63, y=39),
@@ -366,7 +367,7 @@ def _movement_cost(vehicle: Vehicle, area: str, mission: Mission) -> float:
     mobility = _vehicle_mobility(vehicle.type)
     distance = (
         _distance(
-            vehicle.position,
+            _movement_origin(vehicle),
             _staging_position(area=area, slot=0, mission=mission),
         )
         / 100
@@ -378,7 +379,7 @@ def _battery_margin(vehicle: Vehicle, area: str, mission: Mission) -> float:
     mobility = _vehicle_mobility(vehicle.type)
     distance = (
         _distance(
-            vehicle.position,
+            _movement_origin(vehicle),
             _staging_position(area=area, slot=0, mission=mission),
         )
         / 100
@@ -430,15 +431,53 @@ def _vehicle_mobility(vehicle_type: VehicleType) -> _VehicleMobility:
     return _VehicleMobility(speed=0.45, endurance=0.55)
 
 
+def _movement_origin(vehicle: Vehicle) -> Point:
+    if vehicle.area == GCS_AREA:
+        return _gcs_planning_position(vehicle)
+    return vehicle.position
+
+
+def _gcs_planning_position(vehicle: Vehicle) -> Point:
+    slot = _gcs_planning_slot(vehicle.id)
+    if slot is None:
+        return GCS_PLANNING_POINT
+    column = slot % 6
+    row = slot // 6
+    return Point(
+        x=GCS_PLANNING_POINT.x - 13 + (column * 5.2),
+        y=GCS_PLANNING_POINT.y - (row * 4.2),
+    )
+
+
+def _gcs_planning_slot(vehicle_id: str) -> int | None:
+    if vehicle_id.startswith("UxV-"):
+        raw_index = vehicle_id.removeprefix("UxV-")
+        if raw_index.isdecimal():
+            return int(raw_index) - 1
+    if vehicle_id.startswith("SW-"):
+        raw_index = vehicle_id.removeprefix("SW-")
+        if raw_index.isdecimal():
+            return int(raw_index) + 5
+    return None
+
+
 def _distance(origin: Point, target: Point) -> float:
     return math.hypot(origin.x - target.x, origin.y - target.y)
 
 
 def _staging_position(area: str, slot: int, mission: Mission | None = None) -> Point:
+    if area == GCS_AREA:
+        return _gcs_position(slot)
     anchor = _area_anchor(area=area, mission=mission)
     column = slot % 4
     row = slot // 4
     return Point(x=anchor.x - 5.1 + (column * 3.4), y=anchor.y + 3.2 + (row * 3.1))
+
+
+def _gcs_position(slot: int) -> Point:
+    column = slot % 3
+    row = slot // 3
+    return Point(x=GCS_POINT.x - 3.9 + (column * 3.9), y=GCS_POINT.y + 3.2 + (row * 3.1))
 
 
 def _area_anchor(area: str, mission: Mission | None) -> Point:

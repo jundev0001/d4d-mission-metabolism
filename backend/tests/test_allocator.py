@@ -28,6 +28,8 @@ def test_initial_scenario_stages_all_assets_at_gcs() -> None:
     assert snapshot.assignments == ()
     assert {vehicle.area for vehicle in snapshot.vehicles} == {"GCS"}
     assert {vehicle.status for vehicle in snapshot.vehicles} == {VehicleStatus.STANDBY}
+    assert all(vehicle.position.x > 89 for vehicle in snapshot.vehicles)
+    assert all(vehicle.position.y <= 86 for vehicle in snapshot.vehicles)
 
 
 def test_allocation_reaches_target_mcc_and_keeps_reserve_at_gcs() -> None:
@@ -95,6 +97,8 @@ def test_allocation_moves_assigned_assets_and_leaves_surplus_on_standby() -> Non
         else:
             assert vehicle.area == "GCS"
             assert vehicle.status == VehicleStatus.STANDBY
+            assert vehicle.position.x > 89
+            assert vehicle.position.y <= 86
 
 
 def test_allocation_uses_near_healthy_asset_before_far_low_battery_asset() -> None:

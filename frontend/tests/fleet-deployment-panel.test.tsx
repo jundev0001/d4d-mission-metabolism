@@ -68,6 +68,18 @@ describe("fleet deployment panel", () => {
     expect(deployedAssetIcons[3]).toHaveAttribute("src", mapAssetIconHref("relay_uav"))
   })
 
+  it("Given an edited deployment draft When live dashboard refreshes Then the edited count is preserved", async () => {
+    render(<FleetDeploymentPanel />)
+    const relayCountInput = screen.getByLabelText("중계 UAV 대수")
+
+    fireEvent.change(relayCountInput, { target: { value: "4" } })
+    useMissionStore.setState({ dashboard: makeDeploymentDashboard() })
+
+    await waitFor(() => {
+      expect(relayCountInput).toHaveValue(4)
+    })
+  })
+
   it("Given staged UxVs When approving the optimized allocation Then the allocation API is called", async () => {
     render(<FleetDeploymentPanel />)
 

@@ -2,7 +2,7 @@ import type { CustomMapArea } from "../customScenario"
 import { capabilityLabel } from "../format"
 import type { DashboardState, Point } from "../types"
 
-const GCS_POINT: Point = { x: 50, y: 80 }
+const GCS_POINT: Point = { x: 94.7, y: 58 }
 
 type MapPathOverlay = {
   readonly area: string

@@ -11,7 +11,7 @@ from d4d_mission.types import AreaId, VehicleStatus, VehicleType
 MIN_DEPLOYED_ASSETS: Final = 5
 MAX_DEPLOYED_ASSETS: Final = 24
 GCS_AREA: Final[AreaId] = "GCS"
-GCS_POINT: Final[Point] = Point(x=50, y=80)
+GCS_POINT: Final[Point] = Point(x=94.7, y=58)
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,9 +87,9 @@ def _build_vehicle(vehicle_type: VehicleType, vehicle_index: int) -> Vehicle:
 
 
 def _gcs_position(slot: int) -> Point:
-    column = slot % 6
-    row = slot // 6
-    return Point(x=GCS_POINT.x - 13 + (column * 5.2), y=GCS_POINT.y - (row * 4.2))
+    column = slot % 3
+    row = slot // 3
+    return Point(x=GCS_POINT.x - 3.9 + (column * 3.9), y=GCS_POINT.y + 3.2 + (row * 3.1))
 
 
 def _health_for(profile_endurance: float, profile_speed: float) -> HealthState:

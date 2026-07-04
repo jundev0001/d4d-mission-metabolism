@@ -105,6 +105,8 @@ def test_api_mission_event_decision_and_replay_flow() -> None:
     ]
     assert deployed_payload.assignments == ()
     assert {vehicle.area for vehicle in deployed_payload.vehicles} == {"GCS"}
+    assert all(vehicle.position.x > 89 for vehicle in deployed_payload.vehicles)
+    assert all(vehicle.position.y <= 86 for vehicle in deployed_payload.vehicles)
 
     premature_event = client.post(
         "/event/inject",

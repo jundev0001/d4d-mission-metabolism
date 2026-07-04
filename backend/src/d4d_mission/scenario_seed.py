@@ -14,7 +14,7 @@ from d4d_mission.models import (
 from d4d_mission.types import CapabilityName, MissionType, VehicleStatus, VehicleType
 
 GCS_AREA = "GCS"
-GCS_POINT = Point(x=50, y=80)
+GCS_POINT = Point(x=94.7, y=58)
 
 
 def default_mission() -> Mission:
@@ -178,9 +178,9 @@ def _capabilities_for(vehicle_type: VehicleType) -> CapabilityVector:
 
 
 def _gcs_position(slot: int) -> Point:
-    column = slot % 6
-    row = slot // 6
-    return Point(x=GCS_POINT.x - 13 + (column * 5.2), y=GCS_POINT.y - (row * 4.2))
+    column = slot % 3
+    row = slot // 3
+    return Point(x=GCS_POINT.x - 3.9 + (column * 3.9), y=GCS_POINT.y + 3.2 + (row * 3.1))
 
 
 def default_assignments() -> tuple[Assignment, ...]:

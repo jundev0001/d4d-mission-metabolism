@@ -27,20 +27,34 @@ export function FleetDeploymentPanel() {
     [dashboard?.vehicles, profiles],
   )
   const [draft, setDraft] = useState<readonly FleetDeploymentItem[]>(baselineDraft)
+  const [hasDraftEdits, setHasDraftEdits] = useState(false)
   const totalCount = draft.reduce((sum, item) => sum + item.count, 0)
   const canDeploy = totalCount >= MIN_DEPLOYED_ASSETS && !isRunningDemo
   const canAllocate = dashboard !== null && canDeploy
   const canRemove = totalCount > MIN_DEPLOYED_ASSETS && !isRunningDemo
 
   useEffect(() => {
+    if (hasDraftEdits) {
+      return
+    }
     setDraft(baselineDraft)
-  }, [baselineDraft])
+  }, [baselineDraft, hasDraftEdits])
+
+  const updateDraft = (nextDraft: readonly FleetDeploymentItem[]) => {
+    setHasDraftEdits(true)
+    setDraft(nextDraft)
+  }
+
+  const deployDraft = async (nextDraft: readonly FleetDeploymentItem[]) => {
+    await deployFleet(compactDeployment(nextDraft))
+    setHasDraftEdits(false)
+  }
 
   const removeVehicle = (vehicleType: VehicleType) => {
     const nextDraft = changeCount(draft, vehicleType, countFor(draft, vehicleType) - 1)
     setDraft(nextDraft)
     if (deploymentTotal(nextDraft) >= MIN_DEPLOYED_ASSETS) {
-      void deployFleet(compactDeployment(nextDraft))
+      void deployDraft(nextDraft)
     }
   }
 
@@ -56,7 +70,7 @@ export function FleetDeploymentPanel() {
             draft={draft}
             key={profile.vehicle_type}
             profile={profile}
-            onCountChange={setDraft}
+            onCountChange={updateDraft}
           />
         ))}
       </div>
@@ -78,7 +92,7 @@ export function FleetDeploymentPanel() {
             className="button"
             type="button"
             disabled={!canDeploy}
-            onClick={() => void deployFleet(compactDeployment(draft))}
+            onClick={() => void deployDraft(draft)}
           >
             <Send size={14} />
             맵에 배치

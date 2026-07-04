@@ -7,6 +7,10 @@ const REAL_ASSET_CLUSTER_RADIUS_BASE = 10.5
 const REAL_ASSET_CLUSTER_RADIUS_STEP = 0.95
 const SYNTHETIC_CLUSTER_RADIUS_BASE = 3.4
 const SYNTHETIC_CLUSTER_RADIUS_STEP = 0.28
+const RIGHT_EDGE_CLUSTER_THRESHOLD = 89
+const RIGHT_EDGE_CLUSTER_X = 94.7
+const REAL_RIGHT_EDGE_STEP = 6.4
+const SYNTHETIC_RIGHT_EDGE_STEP = 3.2
 
 type AssetDisplayCluster = {
   center: Point
@@ -33,6 +37,23 @@ export function displayPositionsForVehicles(
     const syntheticMembers = sortedClusterMembers(
       group.members.filter((vehicle) => vehicle.synthetic),
     )
+    if (isRightEdgeCluster(group.center)) {
+      placeRightEdgeRail({
+        center: group.center,
+        members: realMembers,
+        positions,
+        step: REAL_RIGHT_EDGE_STEP,
+        x: RIGHT_EDGE_CLUSTER_X,
+      })
+      placeRightEdgeRail({
+        center: group.center,
+        members: syntheticMembers,
+        positions,
+        step: SYNTHETIC_RIGHT_EDGE_STEP,
+        x: RIGHT_EDGE_CLUSTER_X - 4.4,
+      })
+      continue
+    }
     placeClusterRing({
       angleOffset: -Math.PI / 2,
       center: group.center,
@@ -58,8 +79,28 @@ export function displayPositionsForVehicles(
   return positions
 }
 
+function isRightEdgeCluster(center: Point): boolean {
+  return center.x > RIGHT_EDGE_CLUSTER_THRESHOLD
+}
+
 function sortedClusterMembers(members: readonly Vehicle[]): readonly Vehicle[] {
   return [...members].sort((left, right) => left.id.localeCompare(right.id))
+}
+
+function placeRightEdgeRail(request: {
+  readonly center: Point
+  readonly members: readonly Vehicle[]
+  readonly positions: Map<string, Point>
+  readonly step: number
+  readonly x: number
+}): void {
+  const midpoint = (request.members.length - 1) / 2
+  request.members.forEach((vehicle, index) => {
+    request.positions.set(vehicle.id, {
+      x: request.x,
+      y: clampMapCoordinate(request.center.y + (index - midpoint) * request.step, "y"),
+    })
+  })
 }
 
 function placeClusterRing(request: {
