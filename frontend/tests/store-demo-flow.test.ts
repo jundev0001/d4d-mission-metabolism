@@ -46,6 +46,7 @@ describe("custom scenario demo flow gate", () => {
       lastError: null,
       customScenario: DEFAULT_CUSTOM_SCENARIO,
       customScenarioRun: null,
+      initialDeploymentApproval: "idle",
     })
   })
 

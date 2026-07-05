@@ -90,6 +90,7 @@ describe("mission store", () => {
       lastError: null,
       customScenario: DEFAULT_CUSTOM_SCENARIO,
       customScenarioRun: null,
+      initialDeploymentApproval: "idle",
     })
   })
 
@@ -158,7 +159,7 @@ describe("mission store", () => {
     expect(useMissionStore.getState().lastError).toBe("편성 승인 후 이벤트 주입이 가능합니다.")
   })
 
-  it("Given a scripted demo When it starts Then allocation is approved before events", async () => {
+  it("Given a scripted demo When it starts Then deployment waits for operator approval", async () => {
     vi.useFakeTimers()
     const resetDashboard = { ...makeDashboardState(), assignments: [] }
     const allocatedDashboard = makeDashboardState()
@@ -168,12 +169,19 @@ describe("mission store", () => {
 
     const run = useMissionStore.getState().runScriptedDemo()
     await vi.advanceTimersByTimeAsync(0)
-    await vi.advanceTimersByTimeAsync(2200)
     await run
 
     expect(apiMocks.resetMission).toHaveBeenCalledWith(42)
+    expect(apiMocks.allocateMission).not.toHaveBeenCalled()
+    expect(apiMocks.injectEvent).not.toHaveBeenCalled()
+    expect(useMissionStore.getState().initialDeploymentApproval).toBe("pending")
+
+    const approval = useMissionStore.getState().approveInitialDeployment()
+    await vi.advanceTimersByTimeAsync(2200)
+    await approval
+
     expect(apiMocks.allocateMission).toHaveBeenCalledTimes(1)
-    expect(apiMocks.injectEvent).toHaveBeenCalledTimes(4)
+    expect(apiMocks.injectEvent).toHaveBeenCalledTimes(1)
     expect(apiMocks.resetMission.mock.invocationCallOrder[0]).toBeLessThan(
       apiMocks.allocateMission.mock.invocationCallOrder[0] ?? 0,
     )

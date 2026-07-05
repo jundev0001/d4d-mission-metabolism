@@ -1,4 +1,4 @@
-import { Play, RotateCcw } from "lucide-react"
+import { Play, RotateCcw, ShieldCheck } from "lucide-react"
 import { formatPercent, missionObjectiveLabel } from "../format"
 import { useMissionStore } from "../store"
 
@@ -6,7 +6,10 @@ export function Header() {
   const dashboard = useMissionStore((state) => state.dashboard)
   const reset = useMissionStore((state) => state.reset)
   const runScriptedDemo = useMissionStore((state) => state.runScriptedDemo)
+  const approveInitialDeployment = useMissionStore((state) => state.approveInitialDeployment)
+  const initialDeploymentApproval = useMissionStore((state) => state.initialDeploymentApproval)
   const isRunningDemo = useMissionStore((state) => state.isRunningDemo)
+  const isWaitingForDeploymentApproval = initialDeploymentApproval === "pending"
   const targetMcc = dashboard?.mission.constraints.target_mcc ?? 0.8
   const relayRedundancy = dashboard?.mission.constraints.min_relay_redundancy ?? 1
   const returnThreshold = dashboard?.mission.constraints.return_battery_threshold ?? 0.2
@@ -38,11 +41,21 @@ export function Header() {
         <button
           className="button primary"
           type="button"
-          disabled={isRunningDemo}
-          onClick={() => void runScriptedDemo()}
+          disabled={isRunningDemo && !isWaitingForDeploymentApproval}
+          onClick={() => {
+            if (isWaitingForDeploymentApproval) {
+              void approveInitialDeployment()
+              return
+            }
+            void runScriptedDemo()
+          }}
         >
-          <Play size={15} aria-hidden="true" />
-          {isRunningDemo ? "실행 중" : "데모 실행"}
+          {isWaitingForDeploymentApproval ? (
+            <ShieldCheck size={15} aria-hidden="true" />
+          ) : (
+            <Play size={15} aria-hidden="true" />
+          )}
+          {isWaitingForDeploymentApproval ? "전개 승인" : isRunningDemo ? "실행 중" : "데모 실행"}
         </button>
       </div>
     </header>

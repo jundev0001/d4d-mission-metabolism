@@ -4,7 +4,6 @@ import {
   type CustomScenarioRun,
   createCustomScenarioRun,
   hasPendingRecommendations,
-  injectDemoEvent,
   injectDemoEventBatch,
 } from "./demoFlowRunner"
 import type { DashboardState, EventPayload } from "./types"
@@ -53,16 +52,22 @@ export function runScriptedDemoAction(
     set({ isRunningDemo: true, lastError: null })
     try {
       await get().reset()
-      await get().allocateMission()
-      set({ isRunningDemo: true, lastError: null })
-      await SCRIPTED_EVENTS.reduce(
-        (sequence, event) => sequence.then(() => injectDemoEvent(event, get().injectEvent)),
-        Promise.resolve(),
-      )
+      set({
+        customScenarioRun: {
+          batches: SCRIPTED_EVENTS.map((event) => [event]),
+          nextBatchIndex: 0,
+        },
+        initialDeploymentApproval: "pending",
+        isRunningDemo: true,
+        lastError: null,
+      })
     } catch (error) {
-      set({ lastError: messageForError(error, unknownError) })
-    } finally {
-      set({ isRunningDemo: false })
+      set({
+        lastError: messageForError(error, unknownError),
+        customScenarioRun: null,
+        initialDeploymentApproval: "idle",
+        isRunningDemo: false,
+      })
     }
   }
 }
