@@ -9,6 +9,8 @@ import {
 } from "./demoFlowRunner"
 import type { DashboardState, EventPayload } from "./types"
 
+export type InitialDeploymentApproval = "idle" | "pending" | "approved"
+
 const SCRIPTED_EVENTS: readonly EventPayload[] = [
   { event_type: "comm_jam", target: "B", severity: 0.82 },
   { event_type: "battery_drop", target: "UxV-02", severity: 0.9 },
@@ -18,6 +20,7 @@ const SCRIPTED_EVENTS: readonly EventPayload[] = [
 
 type DemoStore = {
   readonly dashboard: DashboardState | null
+  readonly initialDeploymentApproval: InitialDeploymentApproval
   readonly isRunningDemo: boolean
   readonly customScenario: CustomScenarioDocument
   readonly customScenarioRun: CustomScenarioRun | null
@@ -29,7 +32,9 @@ type DemoStore = {
 }
 
 type DemoPatch = Partial<
-  Pick<DemoStore, "customScenarioRun" | "isRunningDemo"> & { readonly lastError: string | null }
+  Pick<DemoStore, "customScenarioRun" | "initialDeploymentApproval" | "isRunningDemo"> & {
+    readonly lastError: string | null
+  }
 >
 type DemoGet = () => DemoStore
 type DemoSet = (patch: DemoPatch) => void
@@ -76,17 +81,17 @@ export function runCustomScenarioAction(
     try {
       await get().reset()
       await get().configureCustomMission(customScenario)
-      await get().allocateMission()
       set({
         customScenarioRun: createCustomScenarioRun(customScenario),
+        initialDeploymentApproval: "pending",
         isRunningDemo: true,
         lastError: null,
       })
-      await get().advanceCustomScenario()
     } catch (error) {
       set({
         lastError: messageForError(error, unknownError),
         customScenarioRun: null,
+        initialDeploymentApproval: "idle",
         isRunningDemo: false,
       })
     }
@@ -105,7 +110,7 @@ export function advanceCustomScenarioAction(
     }
     const events = run.batches.at(run.nextBatchIndex)
     if (events === undefined) {
-      set({ customScenarioRun: null, isRunningDemo: false })
+      set({ customScenarioRun: null, initialDeploymentApproval: "idle", isRunningDemo: false })
       return
     }
     set({ customScenarioRun: advanceRunCursor(run) })
@@ -118,6 +123,7 @@ export function advanceCustomScenarioAction(
       set({
         lastError: messageForError(error, unknownError),
         customScenarioRun: null,
+        initialDeploymentApproval: "idle",
         isRunningDemo: false,
       })
     }

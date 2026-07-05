@@ -1,0 +1,49 @@
+.initial-deployment-gate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--surface-inset);
+}
+
+.initial-deployment-gate.pending {
+  border-color: color-mix(in srgb, var(--accent-primary) 62%, var(--border-strong));
+  background: color-mix(in srgb, var(--accent-primary) 8%, var(--surface-inset));
+}
+
+.initial-deployment-gate.approved {
+  border-color: color-mix(in srgb, var(--status-success) 48%, var(--border-strong));
+}
+
+.initial-deployment-gate span {
+  display: block;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.initial-deployment-gate p {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.initial-deployment-gate .button {
+  min-width: 112px;
+}
+
+@media (max-width: 640px) {
+  .initial-deployment-gate {
+    grid-template-columns: 1fr;
+  }
+
+  .initial-deployment-gate .button {
+    width: 100%;
+  }
+}

@@ -201,8 +201,11 @@ describe("mission store", () => {
 
     const run = useMissionStore.getState().runCustomScenario()
     await vi.advanceTimersByTimeAsync(0)
-    await vi.advanceTimersByTimeAsync(2200)
     await run
+
+    const approval = useMissionStore.getState().approveInitialDeployment()
+    await vi.advanceTimersByTimeAsync(2200)
+    await approval
 
     expect(apiMocks.configureMission).toHaveBeenCalledWith(
       expect.objectContaining({ objective: "Original custom flow" }),

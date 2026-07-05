@@ -1,3 +1,4 @@
+import { ShieldCheck } from "lucide-react"
 import { useState } from "react"
 import { useMissionStore } from "../store"
 import { BlackBoxPanel } from "./BlackBoxPanel"
@@ -33,11 +34,14 @@ export function ScenarioWorkspace() {
   const [activeStep, setActiveStep] = useState<ScenarioWorkflowStep>("fleet")
   const dashboard = useMissionStore((state) => state.dashboard)
   const scenario = useMissionStore((state) => state.customScenario)
+  const approval = useMissionStore((state) => state.initialDeploymentApproval)
+  const approveInitialDeployment = useMissionStore((state) => state.approveInitialDeployment)
   const assignments = dashboard?.assignments.length ?? 0
   const realAssets = dashboard?.vehicles.filter((vehicle) => !vehicle.synthetic).length ?? 0
+  const fleetStatus = deploymentStatusLabel({ approval, assignments, realAssets })
   const status = {
     events: `${scenario.scenario.nodes.length}개 노드 / ${scenario.scenario.edges.length}개 연결`,
-    fleet: assignments > 0 ? "편성 승인 완료" : `${realAssets}대 대기`,
+    fleet: fleetStatus,
     map: `${scenario.map.areas.length}개 구역`,
   } satisfies Record<ScenarioWorkflowStep, string>
 
@@ -93,6 +97,21 @@ export function ScenarioWorkspace() {
                 <dd>{scenario.scenario.nodes.length}개</dd>
               </div>
             </dl>
+            <div className={`initial-deployment-gate ${approval}`}>
+              <div>
+                <span>{approvalTitle(approval)}</span>
+                <p>{approvalCopy(approval)}</p>
+              </div>
+              <button
+                className="button primary"
+                type="button"
+                disabled={approval !== "pending"}
+                onClick={() => void approveInitialDeployment()}
+              >
+                <ShieldCheck size={15} aria-hidden="true" />
+                전개 승인
+              </button>
+            </div>
           </section>
           {activeStep === "events" ? <EventControls /> : null}
           <BlackBoxPanel />
@@ -100,4 +119,42 @@ export function ScenarioWorkspace() {
       </section>
     </section>
   )
+}
+
+function deploymentStatusLabel({
+  approval,
+  assignments,
+  realAssets,
+}: {
+  readonly approval: "idle" | "pending" | "approved"
+  readonly assignments: number
+  readonly realAssets: number
+}): string {
+  if (approval === "pending") {
+    return "전개 승인 대기"
+  }
+  if (approval === "approved" || assignments > 0) {
+    return "전개 승인 완료"
+  }
+  return `${realAssets}대 대기`
+}
+
+function approvalTitle(approval: "idle" | "pending" | "approved"): string {
+  if (approval === "pending") {
+    return "초기 전개 승인 대기"
+  }
+  if (approval === "approved") {
+    return "초기 전개 승인 완료"
+  }
+  return "초기 전개 미시작"
+}
+
+function approvalCopy(approval: "idle" | "pending" | "approved"): string {
+  if (approval === "pending") {
+    return "승인 전에는 UxV 배치와 첫 이벤트가 유보됩니다."
+  }
+  if (approval === "approved") {
+    return "승인된 배치안으로 UxV가 구역별 임무 위치에 전개됩니다."
+  }
+  return "플로우 실행 후 최초 배치안을 확인하고 승인합니다."
 }

@@ -1,8 +1,9 @@
 from d4d_mission.allocator import apply_allocation_to_vehicles, plan_allocation
 from d4d_mission.capability import compute_capability_report
+from d4d_mission.deployment import DeploymentCount, apply_fleet_deployment
 from d4d_mission.models import Assignment, CapabilityDemand, DashboardState, Point, Vehicle
 from d4d_mission.scenario import create_initial_snapshot
-from d4d_mission.types import VehicleStatus
+from d4d_mission.types import CapabilityName, MissionType, VehicleStatus, VehicleType
 
 ZERO_DEMAND = CapabilityDemand(
     visual_recon=0,
@@ -99,6 +100,96 @@ def test_allocation_moves_assigned_assets_and_leaves_surplus_on_standby() -> Non
             assert vehicle.status == VehicleStatus.STANDBY
             assert vehicle.position.x > 89
             assert vehicle.position.y <= 86
+
+
+def test_custom_allocation_moves_assets_to_custom_area_centers() -> None:
+    snapshot = create_initial_snapshot(seed=11)
+    mission = snapshot.mission.model_copy(
+        update={
+            "areas": ("north-ridge", "relay-saddle", "watch-basin"),
+            "requirements": {
+                "north-ridge": ZERO_DEMAND.model_copy(update={"visual_recon": 0.8}),
+                "relay-saddle": ZERO_DEMAND.model_copy(update={"relay": 0.85}),
+                "watch-basin": ZERO_DEMAND.model_copy(update={"overwatch": 0.82}),
+            },
+            "area_centers": {
+                "north-ridge": Point(x=18, y=22),
+                "relay-saddle": Point(x=78, y=24),
+                "watch-basin": Point(x=34, y=74),
+            },
+            "area_priorities": {
+                "north-ridge": 0.8,
+                "relay-saddle": 0.85,
+                "watch-basin": 0.75,
+            },
+            "area_threats": {"north-ridge": 0, "relay-saddle": 0, "watch-basin": 0},
+        },
+    )
+
+    plan = plan_allocation(vehicles=snapshot.vehicles, mission=mission)
+    vehicles = apply_allocation_to_vehicles(
+        vehicles=snapshot.vehicles,
+        assignments=plan.assignments,
+        mission=mission,
+    )
+
+    assert {assignment.area for assignment in plan.assignments}.issubset(set(mission.areas))
+    for vehicle in vehicles:
+        if vehicle.area == "GCS":
+            continue
+        center = mission.area_centers[vehicle.area]
+        assert abs(vehicle.position.x - center.x) <= 5.2
+        assert 3.0 <= vehicle.position.y - center.y <= 6.4
+
+
+def test_custom_allocation_matches_specialized_vehicles_to_capability_demands() -> None:
+    snapshot = create_initial_snapshot(seed=11)
+    deployed = apply_fleet_deployment(
+        snapshot=snapshot,
+        deployment=(
+            DeploymentCount(VehicleType.MICRO_SCOUT_UAV, 2),
+            DeploymentCount(VehicleType.RELAY_UAV, 1),
+            DeploymentCount(VehicleType.OVERWATCH_UAV, 1),
+            DeploymentCount(VehicleType.GPS_DENIED_UAV, 1),
+        ),
+    )
+    mission = snapshot.mission.model_copy(
+        update={
+            "mission_type": MissionType.AREA_RECON,
+            "areas": ("route-gap", "relay-ridge", "watch-basin", "jammed-canyon"),
+            "requirements": {
+                "route-gap": ZERO_DEMAND.model_copy(update={"visual_recon": 0.7}),
+                "relay-ridge": ZERO_DEMAND.model_copy(update={"relay": 0.85}),
+                "watch-basin": ZERO_DEMAND.model_copy(update={"overwatch": 0.85}),
+                "jammed-canyon": ZERO_DEMAND.model_copy(update={"gps_denied_nav": 0.85}),
+            },
+            "area_centers": {
+                "route-gap": Point(x=18, y=22),
+                "relay-ridge": Point(x=76, y=24),
+                "watch-basin": Point(x=34, y=74),
+                "jammed-canyon": Point(x=68, y=70),
+            },
+            "area_priorities": {
+                "route-gap": 0.8,
+                "relay-ridge": 0.8,
+                "watch-basin": 0.8,
+                "jammed-canyon": 0.8,
+            },
+            "area_threats": {
+                "route-gap": 0,
+                "relay-ridge": 0,
+                "watch-basin": 0,
+                "jammed-canyon": 0,
+            },
+        },
+    )
+
+    plan = plan_allocation(vehicles=deployed.vehicles, mission=mission)
+    assignments = _assignment_map(plan.assignments)
+
+    assert assignments["UxV-03"] == ("relay-ridge", CapabilityName.RELAY.value)
+    assert assignments["UxV-04"] == ("watch-basin", CapabilityName.OVERWATCH.value)
+    assert assignments["UxV-05"] == ("jammed-canyon", CapabilityName.GPS_DENIED_NAV.value)
 
 
 def test_allocation_uses_near_healthy_asset_before_far_low_battery_asset() -> None:

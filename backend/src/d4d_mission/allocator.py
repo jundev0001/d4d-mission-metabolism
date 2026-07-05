@@ -1,56 +1,42 @@
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 from typing import Final
 
-from d4d_mission.catalog import vehicle_type_profile
+from d4d_mission.allocation_application import apply_allocation_to_vehicles
+from d4d_mission.allocation_explanations import allocation_explanations
+from d4d_mission.allocation_movement import (
+    battery_margin,
+    movement_cost,
+)
+from d4d_mission.allocation_scoring import (
+    CandidateUtilityInput,
+    area_urgency,
+    candidate_utility,
+    capability_fit_score,
+)
 from d4d_mission.decay import HORIZON_STEPS, horizon_capability
 from d4d_mission.models import (
     AllocationResponse,
     Assignment,
     CapabilityVector,
     Mission,
-    Point,
     Vehicle,
 )
 from d4d_mission.types import (
     CAPABILITY_NAMES,
-    DEPLOYABLE_VEHICLE_TYPES,
     CapabilityName,
     VehicleStatus,
-    VehicleType,
 )
+
+__all__ = ("apply_allocation_to_vehicles", "plan_allocation")
 
 EPSILON: Final = 1e-9
 MIN_COVERAGE_GAIN: Final = 0.03
 MIN_UTILITY: Final = 0.02
 SYNTHETIC_WEIGHT: Final = 0.75
-MAX_EXPLANATIONS: Final = 4
-MOVEMENT_COST_WEIGHT: Final = 0.18
-BATTERY_PENALTY_WEIGHT: Final = 1.65
-NO_GO_PENALTY: Final = 1.15
-THREAT_PENALTY_WEIGHT: Final = 0.24
-CHURN_PENALTY: Final = 0.12
-RESERVE_PRESERVATION_WEIGHT: Final = 0.08
-SAME_AREA_BONUS: Final = 0.06
-ROLE_FIT_BONUS: Final = 0.08
-GCS_AREA: Final[str] = "GCS"
-GCS_POINT: Final[Point] = Point(x=94.7, y=58)
-GCS_PLANNING_POINT: Final[Point] = Point(x=50, y=80)
-AREA_STAGING_POINTS: Final[dict[str, Point]] = {
-    "A": Point(x=25, y=30),
-    "B": Point(x=63, y=39),
-    "C": Point(x=52, y=67),
-}
 
 type Remaining = dict[tuple[str, CapabilityName], float]
-
-
-@dataclass(frozen=True, slots=True)
-class _VehicleMobility:
-    speed: float
-    endurance: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,55 +83,8 @@ def plan_allocation(
     )
     return AllocationResponse(
         assignments=tuple(placement.assignment for placement in placements),
-        explanations=_explanations(placements=placements, reserve_count=reserve_count),
+        explanations=allocation_explanations(placements=placements, reserve_count=reserve_count),
     )
-
-
-def apply_allocation_to_vehicles(
-    vehicles: tuple[Vehicle, ...],
-    assignments: tuple[Assignment, ...],
-    mission: Mission | None = None,
-) -> tuple[Vehicle, ...]:
-    assignments_by_vehicle = {assignment.vehicle_id: assignment for assignment in assignments}
-    area_slots: dict[str, int] = {}
-    updated: list[Vehicle] = []
-    for vehicle in vehicles:
-        if vehicle.status == VehicleStatus.LOST:
-            updated.append(vehicle)
-            continue
-        assignment = assignments_by_vehicle.get(vehicle.id)
-        if assignment is None:
-            updated.append(
-                vehicle.model_copy(
-                    update={
-                        "area": GCS_AREA,
-                        "status": VehicleStatus.STANDBY,
-                        "position": _staging_position(
-                            area=GCS_AREA,
-                            slot=len(updated),
-                            mission=mission,
-                        ),
-                    },
-                ),
-            )
-            continue
-        slot = area_slots.get(assignment.area, 0)
-        area_slots[assignment.area] = slot + 1
-        updated.append(
-            vehicle.model_copy(
-                update={
-                    "area": assignment.area,
-                    "role": assignment.role,
-                    "status": VehicleStatus.ACTIVE,
-                    "position": _staging_position(
-                        area=assignment.area,
-                        slot=slot,
-                        mission=mission,
-                    ),
-                },
-            ),
-        )
-    return tuple(updated)
 
 
 def _plan(
@@ -243,22 +182,29 @@ def _candidate_for_area(
     covered = _covered_in_area(effective=effective, weight=weight, remaining=remaining, area=area)
     if covered < MIN_COVERAGE_GAIN:
         return None
-    capability = max(
-        CAPABILITY_NAMES,
-        key=lambda cap: _coverage(effective, weight, remaining, area, cap),
-    )
-    priority = _area_urgency(mission=mission, area=area)
-    movement_cost = _movement_cost(vehicle=vehicle, area=area, mission=mission)
-    battery_margin = _battery_margin(vehicle=vehicle, area=area, mission=mission)
-    utility = _candidate_utility(
+    capability = _best_capability_for_area(
         vehicle=vehicle,
-        mission=mission,
+        effective=effective,
+        weight=weight,
+        remaining=remaining,
         area=area,
-        capability=capability,
-        covered=covered,
-        priority=priority,
-        movement_cost=movement_cost,
-        battery_margin=battery_margin,
+    )
+    capability_covered = _coverage(effective, weight, remaining, area, capability)
+    priority = area_urgency(mission=mission, area=area)
+    candidate_movement_cost = movement_cost(vehicle=vehicle, area=area, mission=mission)
+    candidate_battery_margin = battery_margin(vehicle=vehicle, area=area, mission=mission)
+    utility = candidate_utility(
+        CandidateUtilityInput(
+            vehicle=vehicle,
+            mission=mission,
+            area=area,
+            capability=capability,
+            total_covered=covered,
+            capability_covered=capability_covered,
+            priority=priority,
+            movement_cost=candidate_movement_cost,
+            battery_margin=candidate_battery_margin,
+        ),
     )
     return _Candidate(
         vehicle=vehicle,
@@ -267,8 +213,8 @@ def _candidate_for_area(
         covered=covered,
         priority=priority,
         utility=utility,
-        movement_cost=movement_cost,
-        battery_margin=battery_margin,
+        movement_cost=candidate_movement_cost,
+        battery_margin=candidate_battery_margin,
         weight=weight,
     )
 
@@ -284,33 +230,19 @@ def _covered_in_area(
     )
 
 
-def _candidate_utility(  # noqa: PLR0913
+def _best_capability_for_area(
     vehicle: Vehicle,
-    mission: Mission,
+    effective: CapabilityVector,
+    weight: float,
+    remaining: Remaining,
     area: str,
-    capability: CapabilityName,
-    covered: float,
-    priority: float,
-    movement_cost: float,
-    battery_margin: float,
-) -> float:
-    base_gain = covered * priority
-    role_bonus = _role_fit_bonus(vehicle=vehicle, capability=capability)
-    no_go_penalty = NO_GO_PENALTY if area in mission.no_go_areas else 0.0
-    battery_penalty = max(0.0, -battery_margin) * BATTERY_PENALTY_WEIGHT
-    threat_penalty = _threat_penalty(vehicle=vehicle, mission=mission, area=area)
-    churn_penalty = _churn_penalty(vehicle=vehicle, area=area)
-    reserve_penalty = _reserve_preservation_penalty(vehicle=vehicle, capability=capability)
-    return (
-        base_gain
-        + role_bonus
-        + _same_area_bonus(vehicle=vehicle, area=area)
-        - movement_cost
-        - no_go_penalty
-        - battery_penalty
-        - threat_penalty
-        - churn_penalty
-        - reserve_penalty
+) -> CapabilityName:
+    return max(
+        CAPABILITY_NAMES,
+        key=lambda cap: (
+            _coverage(effective, weight, remaining, area, cap),
+            capability_fit_score(vehicle=vehicle, capability=cap),
+        ),
     )
 
 
@@ -326,163 +258,5 @@ def _consume(
             remaining[key] = max(0.0, remaining[key] - (effective.value_for(capability) * weight))
 
 
-def _explanation_line(placement: _Placement) -> str:
-    assignment = placement.assignment
-    delta = f"+{placement.covered:.2f}"
-    utility = f"utility {placement.utility:.2f}"
-    move = f"move {placement.movement_cost:.2f}"
-    battery = f"battery margin {placement.battery_margin:.2f}"
-    return (
-        f"{assignment.vehicle_id} -> {assignment.area} "
-        f"{placement.capability.value} {delta} ({utility}, {move}, {battery})"
-    )
-
-
-def _explanations(placements: tuple[_Placement, ...], reserve_count: int) -> tuple[str, ...]:
-    filled = [
-        placement for placement in placements if not placement.synthetic and placement.covered > 0
-    ]
-    ranked = sorted(
-        filled,
-        key=lambda placement: placement.covered * placement.priority,
-        reverse=True,
-    )
-    explanations = [_explanation_line(placement) for placement in ranked[:MAX_EXPLANATIONS]]
-    if reserve_count > 0:
-        explanations.append(f"{reserve_count} UxVs remain at GCS reserve for rotation/replacement")
-    return tuple(explanations)
-
-
 def _is_assignable(vehicle: Vehicle) -> bool:
     return vehicle.status not in {VehicleStatus.LOST, VehicleStatus.RETURNING}
-
-
-def _area_urgency(mission: Mission, area: str) -> float:
-    priority = mission.area_priorities.get(area, 0.5)
-    threat = mission.area_threats.get(area, 0.0)
-    return 1.0 + priority + (threat * 0.25)
-
-
-def _movement_cost(vehicle: Vehicle, area: str, mission: Mission) -> float:
-    mobility = _vehicle_mobility(vehicle.type)
-    distance = (
-        _distance(
-            _movement_origin(vehicle),
-            _staging_position(area=area, slot=0, mission=mission),
-        )
-        / 100
-    )
-    return (distance / max(mobility.speed, 0.12)) * MOVEMENT_COST_WEIGHT
-
-
-def _battery_margin(vehicle: Vehicle, area: str, mission: Mission) -> float:
-    mobility = _vehicle_mobility(vehicle.type)
-    distance = (
-        _distance(
-            _movement_origin(vehicle),
-            _staging_position(area=area, slot=0, mission=mission),
-        )
-        / 100
-    )
-    reserve_floor = mission.constraints.return_battery_threshold
-    travel_budget = distance * (0.32 / max(mobility.endurance, 0.25))
-    required = reserve_floor + travel_budget
-    return vehicle.health.battery - required
-
-
-def _threat_penalty(vehicle: Vehicle, mission: Mission, area: str) -> float:
-    threat = mission.area_threats.get(area, 0.0)
-    comm_exposure = (1.0 - vehicle.health.comm) * threat * 0.42
-    nav_exposure = (1.0 - vehicle.health.nav) * threat * 0.22
-    health_exposure = (1.0 - vehicle.health.health) * threat * 0.18
-    return (threat * THREAT_PENALTY_WEIGHT) + comm_exposure + nav_exposure + health_exposure
-
-
-def _churn_penalty(vehicle: Vehicle, area: str) -> float:
-    if vehicle.status != VehicleStatus.ACTIVE:
-        return 0.0
-    if vehicle.area in {GCS_AREA, area}:
-        return 0.0
-    return CHURN_PENALTY
-
-
-def _same_area_bonus(vehicle: Vehicle, area: str) -> float:
-    if vehicle.status == VehicleStatus.ACTIVE and vehicle.area == area:
-        return SAME_AREA_BONUS
-    return 0.0
-
-
-def _role_fit_bonus(vehicle: Vehicle, capability: CapabilityName) -> float:
-    if vehicle.role == capability:
-        return ROLE_FIT_BONUS
-    return 0.0
-
-
-def _reserve_preservation_penalty(vehicle: Vehicle, capability: CapabilityName) -> float:
-    if vehicle.status != VehicleStatus.STANDBY or capability == CapabilityName.RESERVE:
-        return 0.0
-    return vehicle.capabilities.reserve * RESERVE_PRESERVATION_WEIGHT
-
-
-def _vehicle_mobility(vehicle_type: VehicleType) -> _VehicleMobility:
-    if vehicle_type in DEPLOYABLE_VEHICLE_TYPES:
-        profile = vehicle_type_profile(vehicle_type)
-        return _VehicleMobility(speed=profile.speed, endurance=profile.endurance)
-    return _VehicleMobility(speed=0.45, endurance=0.55)
-
-
-def _movement_origin(vehicle: Vehicle) -> Point:
-    if vehicle.area == GCS_AREA:
-        return _gcs_planning_position(vehicle)
-    return vehicle.position
-
-
-def _gcs_planning_position(vehicle: Vehicle) -> Point:
-    slot = _gcs_planning_slot(vehicle.id)
-    if slot is None:
-        return GCS_PLANNING_POINT
-    column = slot % 6
-    row = slot // 6
-    return Point(
-        x=GCS_PLANNING_POINT.x - 13 + (column * 5.2),
-        y=GCS_PLANNING_POINT.y - (row * 4.2),
-    )
-
-
-def _gcs_planning_slot(vehicle_id: str) -> int | None:
-    if vehicle_id.startswith("UxV-"):
-        raw_index = vehicle_id.removeprefix("UxV-")
-        if raw_index.isdecimal():
-            return int(raw_index) - 1
-    if vehicle_id.startswith("SW-"):
-        raw_index = vehicle_id.removeprefix("SW-")
-        if raw_index.isdecimal():
-            return int(raw_index) + 5
-    return None
-
-
-def _distance(origin: Point, target: Point) -> float:
-    return math.hypot(origin.x - target.x, origin.y - target.y)
-
-
-def _staging_position(area: str, slot: int, mission: Mission | None = None) -> Point:
-    if area == GCS_AREA:
-        return _gcs_position(slot)
-    anchor = _area_anchor(area=area, mission=mission)
-    column = slot % 4
-    row = slot // 4
-    return Point(x=anchor.x - 5.1 + (column * 3.4), y=anchor.y + 3.2 + (row * 3.1))
-
-
-def _gcs_position(slot: int) -> Point:
-    column = slot % 3
-    row = slot // 3
-    return Point(x=GCS_POINT.x - 3.9 + (column * 3.9), y=GCS_POINT.y + 3.2 + (row * 3.1))
-
-
-def _area_anchor(area: str, mission: Mission | None) -> Point:
-    if area == GCS_AREA:
-        return GCS_POINT
-    if mission is not None and area in mission.area_centers:
-        return mission.area_centers[area]
-    return AREA_STAGING_POINTS.get(area, GCS_POINT)

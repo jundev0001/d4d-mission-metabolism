@@ -11,5 +11,6 @@
 @import "./styles/builder-flow-stage.css";
 @import "./styles/builder-graph.css";
 @import "./styles/builder-workspace.css";
+@import "./styles/initial-deployment-gate.css";
 @import "./styles/builder-map-stage.css";
 @import "./styles/responsive.css";

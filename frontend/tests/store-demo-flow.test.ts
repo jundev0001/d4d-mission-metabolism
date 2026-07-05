@@ -69,6 +69,15 @@ describe("custom scenario demo flow gate", () => {
     await vi.runOnlyPendingTimersAsync()
     await run
 
+    expect(apiMocks.allocateMission).not.toHaveBeenCalled()
+    expect(apiMocks.injectEvent).not.toHaveBeenCalled()
+    expect(useMissionStore.getState().initialDeploymentApproval).toBe("pending")
+
+    const approval = useMissionStore.getState().approveInitialDeployment()
+    await vi.runOnlyPendingTimersAsync()
+    await approval
+
+    expect(apiMocks.allocateMission).toHaveBeenCalledTimes(1)
     expect(apiMocks.injectEvent).toHaveBeenCalledTimes(1)
     expect(useMissionStore.getState().isRunningDemo).toBe(true)
 
@@ -105,6 +114,14 @@ describe("custom scenario demo flow gate", () => {
     await vi.runOnlyPendingTimersAsync()
     await run
 
+    expect(apiMocks.allocateMission).not.toHaveBeenCalled()
+    expect(apiMocks.injectEvent).not.toHaveBeenCalled()
+
+    const approval = useMissionStore.getState().approveInitialDeployment()
+    await vi.runOnlyPendingTimersAsync()
+    await approval
+
+    expect(apiMocks.allocateMission).toHaveBeenCalledTimes(1)
     expect(apiMocks.injectEvent).toHaveBeenCalledTimes(1)
 
     const decision = useMissionStore.getState().decide({

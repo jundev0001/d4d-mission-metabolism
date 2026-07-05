@@ -19,6 +19,7 @@ import { hasPendingRecommendations } from "./demoFlowRunner"
 import {
   advanceCustomScenarioAction,
   type CustomScenarioRun,
+  type InitialDeploymentApproval,
   runCustomScenarioAction,
   runScriptedDemoAction,
 } from "./demoStoreActions"
@@ -36,6 +37,7 @@ type MissionStore = {
   readonly dashboard: DashboardState | null
   readonly replay: readonly BlackBoxEntry[]
   readonly vehicleTypeProfiles: readonly VehicleTypeProfile[]
+  readonly initialDeploymentApproval: InitialDeploymentApproval
   readonly isLoading: boolean
   readonly isRunningDemo: boolean
   readonly selectedReplayIndex: number
@@ -53,6 +55,7 @@ type MissionStore = {
   readonly decide: (decision: DecisionPayload) => Promise<void>
   readonly runScriptedDemo: () => Promise<void>
   readonly runCustomScenario: () => Promise<void>
+  readonly approveInitialDeployment: () => Promise<void>
   readonly advanceCustomScenario: () => Promise<void>
   readonly setCustomScenario: (customScenario: CustomScenarioDocument) => void
   readonly selectReplayIndex: (index: number) => void
@@ -65,6 +68,7 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
   dashboard: null,
   replay: [],
   vehicleTypeProfiles: [],
+  initialDeploymentApproval: "idle",
   isLoading: true,
   isRunningDemo: false,
   selectedReplayIndex: 0,
@@ -105,6 +109,7 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
         selectedReplayIndex: 0,
         lastError: null,
         customScenarioRun: null,
+        initialDeploymentApproval: "idle",
         isRunningDemo: false,
       })
     } catch (error) {
@@ -116,7 +121,13 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
     try {
       const dashboard = await postFleetDeployment(items)
       const replay = await fetchReplay()
-      set({ dashboard, replay: replay.entries, selectedReplayIndex: 0, lastError: null })
+      set({
+        dashboard,
+        replay: replay.entries,
+        selectedReplayIndex: 0,
+        lastError: null,
+        initialDeploymentApproval: "idle",
+      })
     } catch (error) {
       set({ lastError: error instanceof Error ? error.message : UNKNOWN_ERROR })
     }
@@ -184,6 +195,32 @@ export const useMissionStore = create<MissionStore>()((set, get) => ({
   runScriptedDemo: runScriptedDemoAction(get, set, UNKNOWN_ERROR),
 
   runCustomScenario: runCustomScenarioAction(get, set, UNKNOWN_ERROR),
+
+  approveInitialDeployment: async () => {
+    if (get().initialDeploymentApproval !== "pending") {
+      return
+    }
+    try {
+      const dashboard = await postAllocation()
+      const replay = await fetchReplay()
+      set({
+        dashboard,
+        replay: replay.entries,
+        selectedReplayIndex: 0,
+        initialDeploymentApproval: "approved",
+        isRunningDemo: true,
+        lastError: null,
+      })
+      await get().advanceCustomScenario()
+    } catch (error) {
+      set({
+        lastError: error instanceof Error ? error.message : UNKNOWN_ERROR,
+        customScenarioRun: null,
+        initialDeploymentApproval: "idle",
+        isRunningDemo: false,
+      })
+    }
+  },
 
   advanceCustomScenario: advanceCustomScenarioAction(get, set, UNKNOWN_ERROR),
 
