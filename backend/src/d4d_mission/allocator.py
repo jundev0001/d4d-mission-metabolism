@@ -33,6 +33,7 @@ NO_GO_PENALTY: Final = 1.15
 THREAT_PENALTY_WEIGHT: Final = 0.24
 CHURN_PENALTY: Final = 0.12
 RESERVE_PRESERVATION_WEIGHT: Final = 0.08
+OPPORTUNITY_COST_WEIGHT: Final = 0.35
 SAME_AREA_BONUS: Final = 0.06
 ROLE_FIT_BONUS: Final = 0.08
 GCS_AREA: Final[str] = "GCS"
@@ -228,7 +229,7 @@ def _best_candidate(
     ]
     if len(candidates) == 0:
         return None
-    return max(candidates, key=lambda candidate: candidate.utility)
+    return max(candidates, key=lambda candidate: _selection_utility(candidate, tuple(candidates)))
 
 
 def _candidate_for_area(
@@ -271,6 +272,38 @@ def _candidate_for_area(
         battery_margin=battery_margin,
         weight=weight,
     )
+
+
+def _selection_utility(candidate: _Candidate, candidates: tuple[_Candidate, ...]) -> float:
+    return candidate.utility - _opportunity_cost(candidate=candidate, candidates=candidates)
+
+
+def _opportunity_cost(candidate: _Candidate, candidates: tuple[_Candidate, ...]) -> float:
+    best_elsewhere = max(
+        (
+            other.utility
+            for other in candidates
+            if other.vehicle.id == candidate.vehicle.id
+            and (other.area != candidate.area or other.capability != candidate.capability)
+        ),
+        default=0.0,
+    )
+    lost_elsewhere = max(0.0, best_elsewhere - candidate.utility)
+    if lost_elsewhere <= EPSILON or candidate.utility <= EPSILON:
+        return 0.0
+
+    best_alternative = max(
+        (
+            other.utility
+            for other in candidates
+            if other.vehicle.id != candidate.vehicle.id
+            and other.area == candidate.area
+            and other.capability == candidate.capability
+        ),
+        default=0.0,
+    )
+    replaceability = min(1.0, max(0.0, best_alternative) / candidate.utility)
+    return lost_elsewhere * replaceability * OPPORTUNITY_COST_WEIGHT
 
 
 def _covered_in_area(

@@ -1,8 +1,14 @@
-from d4d_mission.allocator import apply_allocation_to_vehicles, plan_allocation
+from d4d_mission.allocator import (
+    OPPORTUNITY_COST_WEIGHT,
+    _Candidate,
+    _opportunity_cost,
+    apply_allocation_to_vehicles,
+    plan_allocation,
+)
 from d4d_mission.capability import compute_capability_report
 from d4d_mission.models import Assignment, CapabilityDemand, DashboardState, Point, Vehicle
 from d4d_mission.scenario import create_initial_snapshot
-from d4d_mission.types import VehicleStatus
+from d4d_mission.types import CapabilityName, VehicleStatus
 
 ZERO_DEMAND = CapabilityDemand(
     visual_recon=0,
@@ -171,6 +177,37 @@ def test_high_priority_gap_can_pull_assets_from_lower_priority_area() -> None:
     )
 
 
+def test_opportunity_cost_penalizes_replaceable_use_of_asset_needed_elsewhere() -> None:
+    snapshot = create_initial_snapshot(seed=11)
+    generalist = snapshot.vehicles[3]
+    substitute = snapshot.vehicles[0]
+    current = _candidate(
+        vehicle=generalist,
+        area="A",
+        capability=CapabilityName.VISUAL_RECON,
+        utility=1.0,
+    )
+    better_elsewhere = _candidate(
+        vehicle=generalist,
+        area="B",
+        capability=CapabilityName.RELAY,
+        utility=1.6,
+    )
+    replaceable_alternative = _candidate(
+        vehicle=substitute,
+        area="A",
+        capability=CapabilityName.VISUAL_RECON,
+        utility=0.8,
+    )
+
+    cost = _opportunity_cost(
+        candidate=current,
+        candidates=(current, better_elsewhere, replaceable_alternative),
+    )
+
+    assert cost == (1.6 - 1.0) * (0.8 / 1.0) * OPPORTUNITY_COST_WEIGHT
+
+
 def _patch_vehicle_for_battery_test(vehicle: Vehicle) -> Vehicle:
     if vehicle.id == "UxV-01":
         return vehicle.model_copy(
@@ -192,6 +229,25 @@ def _patch_vehicle_for_battery_test(vehicle: Vehicle) -> Vehicle:
                 },
             ),
         },
+    )
+
+
+def _candidate(
+    vehicle: Vehicle,
+    area: str,
+    capability: CapabilityName,
+    utility: float,
+) -> _Candidate:
+    return _Candidate(
+        vehicle=vehicle,
+        area=area,
+        capability=capability,
+        covered=utility,
+        priority=1,
+        utility=utility,
+        movement_cost=0,
+        battery_margin=1,
+        weight=1,
     )
 
 
